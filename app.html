@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#14532d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description" content="Panel de gestión de reclamos y sugerencias de Casas del Parque 7. Administración comunitaria transparente y segura.">
+  <title>Casas del Parque 7 — Panel</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2314532d'/%3E%3Ccircle cx='32' cy='14' r='4' fill='%23fbbf24'/%3E%3Cpath d='M10 30L32 14l22 16' stroke='%23fbbf24' stroke-width='4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Crect x='16' y='30' width='32' height='24' rx='2' fill='%23fbbf24'/%3E%3Crect x='26' y='38' width='12' height='16' rx='2' fill='%2314532d'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="4.6" r="1.5" fill="currentColor" stroke="none"></circle>
+          <path d="M2.8 11.6L12 3.5l9.2 8.1"></path>
+          <path d="M5.2 9.6v10.9h13.6V9.6"></path>
+          <path d="M9.7 20.5v-6h4.6v6"></path>
+        </svg>
+      </div>
+      <div>
+        <div class="app-name">Casas del Parque 7</div>
+        <div class="app-sub">Reclamos del servicio de guardias</div>
+      </div>
+    </div>
+    <div class="user">
+      <span class="user-name" id="user-nombre"></span>
+      <span class="badge" id="user-casa"></span>
+      <span class="badge role-vecino" id="user-rol"></span>
+      <button class="btn ghost sm" id="btn-cambiar-pass" type="button">Cambiar clave</button>
+      <button class="btn ghost sm" id="btn-logout" type="button">Salir</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <div id="msg" class="msg"></div>
+
+    <div id="card-cambiar-pass" class="card hidden">
+      <h2>🔒 Cambio de contraseña obligatorio</h2>
+      <p class="sub">Por motivos de seguridad y transparencia, debes actualizar la contraseña por defecto antes de continuar.</p>
+      <form id="form-cambiar-pass" class="grid-2">
+        <label>Nueva contraseña (mínimo 6 caracteres)
+          <input type="password" id="pass-nueva" required minlength="6" autocomplete="new-password">
+        </label>
+        <label>Confirmar nueva contraseña
+          <input type="password" id="pass-confirmar" required minlength="6" autocomplete="new-password">
+        </label>
+        <div style="grid-column: 1 / -1;">
+          <button class="btn primary" type="submit" id="btn-save-pass">Actualizar contraseña</button>
+        </div>
+      </form>
+    </div>
+
+    <div id="profiling" class="card hidden">
+      <h2>Completa tu registro</h2>
+      <p class="sub">Tu cuenta ya existe, pero falta asociarla a tu casa. Máximo 2 usuarios por casa.</p>
+      <form id="profiling-form" class="grid-2">
+        <label>Nombre completo
+          <input type="text" id="prof-name" required maxlength="120">
+        </label>
+        <label>Número de casa
+          <select id="prof-casa" required></select>
+        </label>
+        <div>
+          <button class="btn primary" type="submit">Guardar</button>
+        </div>
+      </form>
+    </div>
+
+    <div id="app-main" class="hidden">
+      <div class="welcome">
+        <h2 id="welcome-tx">¡Hola, vecino! <span style="color:var(--sun-dark)">☀</span></h2>
+      </div>
+
+      <nav class="tabs" id="nav"></nav>
+
+      <section id="sec-nuevo" hidden>
+        <div class="card">
+          <h2>Reportar al condominio</h2>
+          <p class="sub">Cuéntanos cualquier situación: seguridad, instalaciones, plazas, calles, luminarias, aseo, estacionamientos u otro tema de la comunidad.</p>
+          <form id="reclamo-form">
+            <label>Categoría
+              <select id="recl-categoria" required></select>
+            </label>
+            <label>Título
+              <input type="text" id="recl-titulo" required minlength="3" maxlength="200" placeholder="Ej.: Luminaria apagada en calle Los Maitenes">
+            </label>
+            <label>Descripción
+              <textarea id="recl-descripcion" required minlength="10" maxlength="2000" rows="5"></textarea>
+            </label>
+            <button class="btn primary" type="submit">Enviar reporte</button>
+            <p class="privacy-note">🔒 Privacidad garantizada: Este reporte es confidencial y solo será visible para ti, el comité y la administración.</p>
+          </form>
+        </div>
+      </section>
+
+      <section id="sec-mios" hidden>
+        <div class="card">
+          <h2>Mis reportes</h2>
+          <div id="mios-list"></div>
+        </div>
+      </section>
+
+      <section id="sec-sugerir" hidden>
+        <div class="card">
+          <h2>Ingresar sugerencia</h2>
+          <form id="sugerencia-form">
+            <label>Título de tu sugerencia
+              <input type="text" id="sug-titulo" required minlength="3" maxlength="200" placeholder="Ej.: Mejorar la iluminación de los pasillos">
+            </label>
+            <label>Detalle
+              <textarea id="sug-descripcion" required minlength="10" maxlength="2000" rows="5"></textarea>
+            </label>
+            <button class="btn primary" type="submit">Enviar sugerencia</button>
+            <p class="privacy-note">🔒 Privacidad garantizada: Esta sugerencia es confidencial y solo será visible para ti, el comité y la administración.</p>
+          </form>
+        </div>
+      </section>
+
+      <section id="sec-mias" hidden>
+        <div class="card">
+          <h2>Mis sugerencias</h2>
+          <div id="mias-list"></div>
+        </div>
+      </section>
+
+      <section id="sec-reclamos" hidden>
+        <div class="card">
+          <h2>Reportes de la comunidad</h2>
+          <div class="filtro">
+            <label for="filtro-buscar-reclamo">Buscar</label>
+            <input type="search" id="filtro-buscar-reclamo" placeholder="Buscar por título, detalle o casa…">
+            <button class="btn ghost sm" id="btn-exportar-reclamos" type="button">Exportar CSV</button>
+          </div>
+          <div id="reclamos-list"></div>
+        </div>
+      </section>
+
+      <section id="sec-sugerencias" hidden>
+        <div class="card">
+          <h2>Sugerencias de la comunidad</h2>
+          <div class="filtro">
+            <label for="filtro-buscar-sugerencia">Buscar</label>
+            <input type="search" id="filtro-buscar-sugerencia" placeholder="Buscar por título, detalle o casa…">
+            <button class="btn ghost sm" id="btn-exportar-sugerencias" type="button">Exportar CSV</button>
+          </div>
+          <div id="sugerencias-list"></div>
+        </div>
+      </section>
+
+      <section id="sec-stats" hidden>
+        <div class="card">
+          <h2>Estadísticas de la comunidad</h2>
+          <div class="stats-grid" id="stats-grid"></div>
+          <div class="grid-2">
+            <div class="card chart-card">
+              <h3>Reportes por estado</h3>
+              <canvas id="chart-estado" height="200"></canvas>
+            </div>
+            <div class="card chart-card">
+              <h3>Reportes por categoría</h3>
+              <canvas id="chart-categoria" height="200"></canvas>
+            </div>
+            <div class="card chart-card">
+              <h3>Reportes por mes</h3>
+              <canvas id="chart-mes" height="200"></canvas>
+            </div>
+          </div>
+          <div class="stats-grid" id="stats-grid-sug" style="margin-top: 4px;"></div>
+          <div class="grid-2">
+            <div class="card chart-card">
+              <h3>Sugerencias por estado</h3>
+              <canvas id="chart-sug-estado" height="200"></canvas>
+            </div>
+            <div class="card chart-card">
+              <h3>Sugerencias por mes</h3>
+              <canvas id="chart-sug-mes" height="200"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="sec-usuarios" hidden>
+        <div class="card">
+          <h2>Usuarios</h2>
+          <p class="sub">Asignar rol. Solo los administradores ven esta sección.</p>
+          <div id="usuarios-list"></div>
+        </div>
+      </section>
+    </div>
+
+    <footer class="site">
+      Casas del Parque 7 · Plataforma Oficial de Gestión Comunitaria
+      <div style="margin-top:4px;">
+        <a href="#" id="link-privacy" class="privacy-link">Política de Privacidad y Seguridad</a>
+      </div>
+    </footer>
+  </div>
+
+  <div id="modal-privacidad" class="modal-overlay hidden" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h2>🔒 Política de Privacidad y Protección de Datos</h2>
+        <button class="modal-close" id="btn-close-privacy" type="button" aria-label="Cerrar">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>En <b>Casas del Parque 7</b>, la privacidad de los vecinos y la protección de sus datos constituyen una prioridad fundamental de la administración del condominio.</p>
+
+        <h3>1. Tratamiento de Datos Personales</h3>
+        <p>Los datos registrados (nombre, correo electrónico y número de casa) se utilizan <b>exclusivamente</b> para la gestión interna de reclamos y sugerencias, así como para la coordinación del servicio de guardias. En ningún caso son compartidos con terceros ajenos a la administración de la comunidad.</p>
+
+        <h3>2. Confidencialidad de las Solicitudes</h3>
+        <p>Cada reclamo y sugerencia es de carácter <b>confidencial</b>. Solo el vecino que lo presenta, su casa (hasta un máximo de dos usuarios) y los responsables de la administración y el comité tienen acceso a su contenido, de modo que ningún otro residente puede consultar las solicitudes de otra casa.</p>
+
+        <h3>3. Facultades de la Administración y el Comité</h3>
+        <p>La administración y el comité, en el ejercicio de sus funciones, pueden revisar las solicitudes presentadas, emitir respuestas y actualizar su estado de gestión. Los demás vecinos únicamente pueden consultar sus propias solicitudes.</p>
+
+        <h3>4. Estadísticas Comunitarias</h3>
+        <p>Los indicadores y gráficos publicados para la comunidad presentan información de carácter general y agregado (cantidad de solicitudes por mes o por categoría). En ningún caso revelan la identidad de los vecinos ni el contenido particular de sus solicitudes.</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/stats.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
