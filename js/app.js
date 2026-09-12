@@ -237,11 +237,12 @@
 
     await definirNav();
 
-    // Novedades: contar contra el ultimo acceso conocido y luego marcarlo
+    // Novedades: contar contra el último acceso conocido. No se marca como
+    // leído aquí: eso ocurre al abrir la campana, para que las novedades sí
+    // se muestren cuando el usuario entra (antes se avanzaba el baseline y la
+    // lista salía vacía aunque la campana marcara un contador).
     vistoHasta = profile.ultimo_acceso || null;
     await actualizarNovedades();
-    await SB.client.rpc("marcar_acceso");
-    vistoHasta = new Date().toISOString();
 
     // Poll en vivo (cada 60 s) para detectar respuestas mientras la app está abierta
     if (pollTimer) clearInterval(pollTimer);

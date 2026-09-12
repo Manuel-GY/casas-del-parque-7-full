@@ -634,7 +634,7 @@ begin
       from (select categoria, count(*)::int as n from public.reclamos where not eliminado group by categoria) t
     ),
     'por_severidad', (
-      select coalesce(jsonb_object_agg(severidad, n), '{}'::jsonb)
+      select coalesce(jsonb_object_agg(coalesce(severidad, 'sin_especificar'), n), '{}'::jsonb)
       from (select severidad, count(*)::int as n from public.reclamos where not eliminado group by severidad) t
     ),
     'por_mes', (
