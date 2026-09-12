@@ -237,6 +237,23 @@ begin
 end;
 $$;
 
+-- Cupos de vecinos usados por cada casa (para el formulario de registro).
+-- Expone SOLO el conteo de vecinos por casa: el minimo necesario para que
+-- el badge del registro muestre "X de 2 cupos usados" sin filtrar datos.
+-- Es security definer para leer profiles por encima de RLS y stable para
+-- que PostgreSQL la cachee dentro de una misma transaccion. Cualquier
+-- cliente (anon/authenticated) puede llamarla via RPC.
+create or replace function public.cupos_por_casa()
+returns table (numero_casa integer, cupos_usados integer)
+language sql stable security definer
+set search_path = public
+as $$
+  select numero_casa, count(*)::int as cupos_usados
+  from public.profiles
+  where rol = 'vecino' and numero_casa is not null
+  group by numero_casa
+$$;
+
 -- ============================================================
 -- 7) ASIGNACIÓN DE ROLES (solo admin)
 -- ============================================================

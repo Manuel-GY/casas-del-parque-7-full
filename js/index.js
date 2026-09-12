@@ -272,6 +272,46 @@
     // Poblar select de casas (1-146)
     SBH.llenarCasas(document.getElementById("reg-casa"));
 
+    // Badge de cupos de vecinos por casa (solo en el registro):
+    // consulta cupos_por_casa() (conteo de vecinos/casa) y muestra cuantos
+    // de los 2 cupos estan usados para la casa seleccionada. Las casas con
+    // cupo completo (2/2) quedan deshabilitadas y marcadas "llena".
+    var casaSelect = document.getElementById("reg-casa");
+    var cupoBadge = document.getElementById("reg-casa-badge");
+    var cuposMap = {};
+    var cuposLoaded = false;
+
+    function aplicarCupos() {
+      if (!casaSelect || !cupoBadge || !cuposLoaded) return;
+      var casa = parseInt(casaSelect.value, 10);
+      if (!casa) { cupoBadge.hidden = true; return; }
+      var usados = cuposMap[casa] || 0;
+      cupoBadge.hidden = false;
+      cupoBadge.textContent = usados + " de 2 cupos usados" + (usados === 2 ? " · casa llena" : "");
+      cupoBadge.className = "cupo-badge" + (usados === 2 ? " llena" : "");
+    }
+
+    if (casaSelect && SB.configOk) {
+      SB.client.rpc("cupos_por_casa")
+        .then(function (res) {
+          if (res.error) return;
+          res.data.forEach(function (r) { cuposMap[r.numero_casa] = r.cupos_usados; });
+          cuposLoaded = true;
+
+          // Deshabilitar casas que ya no tienen cupo libre
+          Array.prototype.forEach.call(casaSelect.options, function (o) {
+            var n = parseInt(o.value, 10);
+            if ((cuposMap[n] || 0) >= 2) {
+              o.disabled = true;
+              o.textContent = "Casa " + n + " · llena";
+            }
+          });
+
+          aplicarCupos();
+        });
+      casaSelect.addEventListener("change", aplicarCupos);
+    }
+
     // Vincular formularios
     loginForm.addEventListener("submit", onLoginForm);
     document.getElementById("register-form").addEventListener("submit", onRegisterForm);

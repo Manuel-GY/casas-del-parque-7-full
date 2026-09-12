@@ -162,6 +162,14 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--l
 }
 
 .hint { font-size: 12px; color: var(--muted); margin: 0; font-weight: 600; }
+.cupo-badge {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 12px; font-weight: 800;
+  padding: 4px 11px; border-radius: 20px;
+  background: #d9f3dc; color: var(--forest);
+}
+.cupo-badge.llena { background: #fee2e2; color: #b91c1c; }
 .msg {
   position: fixed;
   left: 50%;
