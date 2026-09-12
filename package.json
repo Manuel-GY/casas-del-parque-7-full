@@ -4,7 +4,7 @@
   "description": "Plataforma comunitaria de reporte y sugerencias para Casas del Parque 7 (sin framework, sin build).",
   "private": true,
   "scripts": {
-    "test": "node --test tests/",
+    "test": "node --test tests/pure.test.js tests/smoke.test.js",
     "icons": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/make-icons.ps1"
   },
   "engines": {
