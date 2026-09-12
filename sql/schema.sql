@@ -1,10 +1,24 @@
 -- ============================================================
--- Casas del Parque 7 — Esquema de base de datos (Supabase)
+-- Casas del Parque 7 — Esquema de base de datos (Supabase) v2
 -- ============================================================
 --
 -- Este archivo contiene TODO lo necesario para configurar el
--- backend de la plataforma. Ejecutalo completo en el SQL Editor
--- de Supabase Dashboard.
+-- backend de la plataforma desde CERO. Ejecutalo completo en el
+-- SQL Editor de Supabase Dashboard.
+--
+-- Es IDEMPOTENTE: puedes ejecutarlo las veces que quieras sin
+-- romper datos existentes (create if not exists + add column if
+-- not exists + drop policy if exists).
+--
+-- Novedades de la v2:
+--   - 146 casas (antes 142)
+--   - Cupo de 2 vecinos/casa ahora ATOMICO via advisory lock
+--   - Límite anti-spam de registros por correo (10/hora)
+--   - Registro abierto: cualquiera con el link se puede registrar
+--   - Avisos dentro de la app (campana de novedades)
+--   - Fotos adjuntas en reportes y sugerencias (bucket privado)
+--   - Archivar (soft delete) y borrar definitivo (solo admin)
+--   - updated_at en reclamos/sugerencias
 --
 -- Arquitectura de seguridad:
 --   - Row Level Security (RLS) habilitado en todas las tablas
@@ -19,27 +33,35 @@
 create extension if not exists "pgcrypto";
 
 -- ============================================================
--- 1) CASAS (142)
+-- 0) TABLA ANTI-SPAM DE REGISTRO
 -- ============================================================
--- Tabla de referencia para los 142 números de casa del condominio.
--- Se usa como FK en profiles, reclamos y sugerencias.
+-- Registra cada intento de registro por correo. Un disparador en
+-- auth.users la usa para limitar a 10 intentos por hora por correo.
+-- El registro sigue siendo ABIERTO (cualquiera con el link puede
+-- registrarse); esto solo frena fuerza-bruta y spam automatizado.
+-- ============================================================
+create table if not exists public.intentos_registro (
+  email     text not null,
+  creado_en timestamptz not null default now()
+);
+
+create index if not exists intentos_registro_email_idx
+  on public.intentos_registro (email, creado_en);
+
+-- ============================================================
+-- 1) CASAS (146)
 -- ============================================================
 create table if not exists public.casas (
   numero integer primary key
 );
 
--- Poblar con las 142 casas (idempotente: no duplica si ya existen)
+-- Poblar con las 146 casas (idempotente)
 insert into public.casas (numero)
-select gs from generate_series(1, 142) gs
+select gs from generate_series(1, 146) gs
 on conflict (numero) do nothing;
 
 -- ============================================================
 -- 2) PERFILES
--- ============================================================
--- Cada usuario de Supabase Auth tiene UN perfil en esta tabla.
---   - Vecinos: tienen numero_casa (max 2 por casa)
---   - Comité/Admin: numero_casa = null
---   - debe_cambiar_pass: flag para forzar cambio de contraseña
 -- ============================================================
 create table if not exists public.profiles (
   id                uuid primary key references auth.users(id) on delete cascade,
@@ -48,89 +70,87 @@ create table if not exists public.profiles (
   rol               text not null default 'vecino'
                     check (rol in ('vecino','comite','admin')),
   debe_cambiar_pass boolean not null default false,
+  ultimo_acceso     timestamptz,
   created_at        timestamptz not null default now()
 );
 
--- Compatibilidad con esquemas previos: agrega la columna si falta
+-- Compatibilidad con esquemas previos (idempotente)
 alter table public.profiles add column if not exists debe_cambiar_pass boolean not null default false;
+alter table public.profiles add column if not exists ultimo_acceso timestamptz;
 
 -- ============================================================
 -- 3) RECLAMOS (reportes del condominio)
 -- ============================================================
--- Tabla principal de reportes de vecinos sobre cualquier tema
--- del condominio: seguridad, instalaciones, plazas, calles,
--- luminarias, aseo, estacionamientos, etc.
--- Restricciones CHECK garantizan la integridad de datos a nivel DB.
--- Índices para optimizar las consultas más frecuentes.
--- ============================================================
 create table if not exists public.reclamos (
-  id          uuid primary key default gen_random_uuid(),
-  creado_por  uuid references public.profiles(id) on delete set null,
-  numero_casa integer not null references public.casas(numero),
-  categoria   text not null
-              check (categoria in ('seguridad','instalaciones','plazas','calles','luminarias','aseo','estacionamientos','otro')),
-  severidad   text
-              check (severidad is null or severidad in ('baja','media','alta')),
-  titulo      text not null check (length(titulo) between 3 and 200),
-  descripcion text not null check (length(descripcion) between 10 and 2000),
-  estado      text not null default 'nuevo'
-              check (estado in ('nuevo','en_revision','resuelto')),
-  respuesta   text,
-  atendido_por uuid references public.profiles(id) on delete set null,
-  resuelto_en timestamptz,
-  created_at  timestamptz not null default now()
+  id            uuid primary key default gen_random_uuid(),
+  creado_por    uuid references public.profiles(id) on delete set null,
+  numero_casa   integer not null references public.casas(numero),
+  categoria     text not null
+                check (categoria in ('seguridad','instalaciones','plazas','calles','luminarias','aseo','estacionamientos','otro')),
+  severidad     text
+                check (severidad is null or severidad in ('baja','media','alta')),
+  titulo        text not null check (length(titulo) between 3 and 200),
+  descripcion   text not null check (length(descripcion) between 10 and 2000),
+  estado        text not null default 'nuevo'
+                check (estado in ('nuevo','en_revision','resuelto')),
+  respuesta     text,
+  atendido_por  uuid references public.profiles(id) on delete set null,
+  resuelto_en   timestamptz,
+  fotos         text[] not null default '{}',
+  updated_at    timestamptz not null default now(),
+  eliminado     boolean not null default false,
+  eliminado_en  timestamptz,
+  eliminado_por uuid references public.profiles(id) on delete set null,
+  created_at    timestamptz not null default now()
 );
 
 -- Índices para filtrado y ordenamiento frecuente
 create index if not exists reclamos_estado_idx on public.reclamos(estado);
 create index if not exists reclamos_casa_idx  on public.reclamos(numero_casa);
 create index if not exists reclamos_fecha_idx on public.reclamos(created_at);
+create index if not exists reclamos_creado_idx on public.reclamos(creado_por);
+
+-- Compatibilidad con esquemas previos (idempotente)
+alter table public.reclamos add column if not exists fotos text[] not null default '{}';
+alter table public.reclamos add column if not exists updated_at timestamptz not null default now();
+alter table public.reclamos add column if not exists eliminado boolean not null default false;
+alter table public.reclamos add column if not exists eliminado_en timestamptz;
+alter table public.reclamos add column if not exists eliminado_por uuid;
 
 -- ============================================================
--- 3bis) MIGRACIÓN DE CATEGORÍAS (versión completa)
+-- 4) SUGERENCIAS
 -- ============================================================
--- La plataforma dejó de ser solo sobre guardias y ahora cubre
--- todo el condominio. Esta migración:
---   1) Convierte las categorías antiguas a las nuevas
---   2) Actualiza el CHECK para aceptar las nuevas categorías
---
--- Se conservan los valores antiguos en el CHECK temporalmente
--- para no romper el despliegue en producción mientras migra.
--- ============================================================
+create table if not exists public.sugerencias (
+  id          uuid primary key default gen_random_uuid(),
+  creado_por  uuid references public.profiles(id) on delete set null,
+  numero_casa integer not null references public.casas(numero),
+  titulo      text not null check (length(titulo) between 3 and 200),
+  descripcion text not null check (length(descripcion) between 10 and 2000),
+  estado      text not null default 'nueva'
+              check (estado in ('nueva','en_revision','resuelta')),
+  respuesta   text,
+  atendido_por uuid references public.profiles(id) on delete set null,
+  fotos       text[] not null default '{}',
+  updated_at  timestamptz not null default now(),
+  eliminado   boolean not null default false,
+  eliminado_en timestamptz,
+  eliminado_por uuid references public.profiles(id) on delete set null,
+  created_at  timestamptz not null default now()
+);
 
--- Paso 1: eliminar el CHECK de categorías antiguo (permite migrar)
-alter table public.reclamos drop constraint if exists reclamos_categoria_check;
+create index if not exists sugerencias_casa_idx on public.sugerencias(numero_casa);
+create index if not exists sugerencias_fecha_idx on public.sugerencias(created_at);
+create index if not exists sugerencias_creado_idx on public.sugerencias(creado_por);
 
--- Paso 2: reubicar reportes antiguos de guardias en 'seguridad'
-update public.reclamos
-   set categoria = 'seguridad'
- where categoria in ('acceso','comportamiento','turnos');
-
--- Paso 3: ampliar el CHECK con las nuevas categorías
--- (mantiene valores antiguos como compatibilidad con producción)
-alter table public.reclamos add constraint reclamos_categoria_check
-  check (categoria in ('seguridad','instalaciones','plazas','calles','luminarias','aseo','estacionamientos','otro',
-                       'acceso','comportamiento','turnos'));
-
--- Paso 4: severidad pasa a ser OPCIONAL (la versión completa no la usa).
---   - Se quita el NOT NULL y el default para que los nuevos reportes
---     puedan omitirla. Producción (versión antigua) sigue enviándola.
---   - El CHECK permite NULL o los valores válidos.
-alter table public.reclamos alter column severidad drop not null;
-alter table public.reclamos alter column severidad drop default;
-alter table public.reclamos drop constraint if exists reclamos_severidad_check;
-alter table public.reclamos add constraint reclamos_severidad_check
-  check (severidad is null or severidad in ('baja','media','alta'));
+alter table public.sugerencias add column if not exists fotos text[] not null default '{}';
+alter table public.sugerencias add column if not exists updated_at timestamptz not null default now();
+alter table public.sugerencias add column if not exists eliminado boolean not null default false;
+alter table public.sugerencias add column if not exists eliminado_en timestamptz;
+alter table public.sugerencias add column if not exists eliminado_por uuid;
 
 -- ============================================================
--- 4) FUNCIONES DE AYUDA (evitan recursión en RLS)
+-- 5) FUNCIONES DE AYUDA (evitan recursión en RLS)
 -- ============================================================
--- Estas funciones SECURITY DEFINER permiten consultar datos
--- del usuario actual sin entrar en recursión con las políticas RLS.
--- Se usan como base en las políticas de inserción/select.
--- ============================================================
-
--- Retorna el rol del usuario actual ('vecino', 'comite', 'admin')
 create or replace function public.mi_rol()
 returns text
 language sql stable security definer
@@ -139,7 +159,6 @@ as $$
   select rol from public.profiles where id = auth.uid()
 $$;
 
--- Retorna el número de casa del usuario actual
 create or replace function public.mi_casa()
 returns integer
 language sql stable security definer
@@ -149,14 +168,7 @@ as $$
 $$;
 
 -- ============================================================
--- 5) REGISTRO DE PERFILES
--- ============================================================
--- SECURITY DEFINER: es la ÚNICA puerta para crear perfiles.
--- El INSERT directo está bloqueado por RLS.
---
--- Validaciones en la base de datos (no solo en frontend):
---   - Vecino: exige número de casa y respeta cupo de 2 por casa
---   - Comité/Administración: sin casa, solo si lo pide un admin
+-- 6) REGISTRO DE PERFILES (con cupo de 2/casa ATOMICO)
 -- ============================================================
 create or replace function public.registrar_perfil(
   p_nombre text,
@@ -171,17 +183,14 @@ declare
   v_cuenta integer;
   v_perfil public.profiles;
 begin
-  -- Verificar que haya sesión activa
   if auth.uid() is null then
     raise exception 'Debes iniciar sesión.';
   end if;
 
-  -- Evitar perfiles duplicados
   if exists (select 1 from public.profiles where id = auth.uid()) then
     raise exception 'Este usuario ya tiene un perfil registrado.';
   end if;
 
-  -- Validar el rol
   if p_rol not in ('vecino','comite','admin') then
     raise exception 'Rol inválido.';
   end if;
@@ -204,12 +213,15 @@ begin
     raise exception 'Los vecinos deben indicar su número de casa.';
   end if;
 
-  -- Verificar que la casa exista
   if not exists (select 1 from public.casas where numero = p_casa) then
     raise exception 'La casa % no existe.', p_casa;
   end if;
 
-  -- Cupo de 2 vecinos por casa (comité/admin no cuentan)
+  -- CUPO ATÓMICO: bloqueo de asesoramiento a nivel de transacción.
+  -- Serializa los registros simultáneos para la MISMA casa, evitando
+  -- que dos peticiones concurrentes pasen el conteo a la vez.
+  perform pg_advisory_xact_lock(hashtext('public.profiles:cupo'), p_casa);
+
   select count(*) into v_cuenta
   from public.profiles
   where numero_casa = p_casa and rol = 'vecino';
@@ -217,8 +229,8 @@ begin
     raise exception 'La casa % ya tiene sus 2 vecinos registrados.', p_casa;
   end if;
 
-  insert into public.profiles (id, nombre, numero_casa, rol)
-  values (auth.uid(), p_nombre, p_casa, p_rol)
+  insert into public.profiles (id, nombre, numero_casa, rol, ultimo_acceso)
+  values (auth.uid(), p_nombre, p_casa, p_rol, now())
   returning * into v_perfil;
 
   return v_perfil;
@@ -226,9 +238,8 @@ end;
 $$;
 
 -- ============================================================
--- 6) ASIGNACIÓN DE ROLES (solo admin)
+-- 7) ASIGNACIÓN DE ROLES (solo admin)
 -- ============================================================
-
 create or replace function public.asignar_rol(
   p_usuario uuid,
   p_rol     text
@@ -238,7 +249,6 @@ language plpgsql security definer
 set search_path = public
 as $$
 begin
-  -- Solo admin puede cambiar roles
   if coalesce(public.mi_rol(),'') <> 'admin' then
     raise exception 'Solo un administrador puede asignar roles.';
   end if;
@@ -266,25 +276,114 @@ end;
 $$;
 
 -- ============================================================
--- 7) DETALLE DE RECLAMOS (solo comité/admin)
+-- 8) AVISOS DENTRO DE LA APP (campana de novedades)
 -- ============================================================
--- Función RPC que retorna todos los reclamos con los nombres
--- del creador y del que respondió. Solo accesible por comité/admin.
+-- Novedades = reportes/sugerencias del propio usuario que fueron
+-- MODIFICADOS después de su creación (respuesta o cambio de estado)
+-- y después del último acceso registrado.
+-- ============================================================
+create or replace function public.mis_novedades(p_desde timestamptz default null)
+returns jsonb
+language plpgsql stable security definer
+set search_path = public
+as $$
+declare
+  v_desde timestamptz := coalesce(p_desde, now() - interval '365 days');
+  v_json  jsonb;
+begin
+  if auth.uid() is null then
+    raise exception 'Debes iniciar sesión.';
+  end if;
+
+  select jsonb_build_object(
+    'contador', (
+      select count(*)::int from (
+        select id from public.reclamos
+          where creado_por = auth.uid() and not eliminado
+            and updated_at > v_desde and updated_at > created_at
+        union all
+        select id from public.sugerencias
+          where creado_por = auth.uid() and not eliminado
+            and updated_at > v_desde and updated_at > created_at
+      ) t
+    ),
+    'novedades', coalesce((
+      select jsonb_agg(it) from (
+        select it, ts from (
+          select jsonb_build_object(
+            'tipo','reclamo',
+            'id', r.id,
+            'titulo', r.titulo,
+            'descripcion', r.descripcion,
+            'categoria', r.categoria,
+            'estado', r.estado,
+            'respuesta', r.respuesta,
+            'fotos', coalesce(r.fotos, '{}'::text[]),
+            'created_at', r.created_at,
+            'updated_at', r.updated_at
+          ) it, r.updated_at as ts
+          from public.reclamos r
+          where r.creado_por = auth.uid() and not r.eliminado
+            and r.updated_at > v_desde and r.updated_at > r.created_at
+
+          union all
+
+          select jsonb_build_object(
+            'tipo','sugerencia',
+            'id', s.id,
+            'titulo', s.titulo,
+            'descripcion', s.descripcion,
+            'categoria', null,
+            'estado', s.estado,
+            'respuesta', s.respuesta,
+            'fotos', coalesce(s.fotos, '{}'::text[]),
+            'created_at', s.created_at,
+            'updated_at', s.updated_at
+          ), s.updated_at
+          from public.sugerencias s
+          where s.creado_por = auth.uid() and not s.eliminado
+            and s.updated_at > v_desde and s.updated_at > s.created_at
+        ) u
+        order by ts desc
+        limit 30
+      ) agg
+    ), '[]'::jsonb)
+  ) into v_json;
+
+  return v_json;
+end;
+$$;
+
+-- Marca el último acceso del usuario (llamada al abrir la app)
+create or replace function public.marcar_acceso()
+returns void
+language plpgsql security definer
+set search_path = public
+as $$
+begin
+  update public.profiles set ultimo_acceso = now() where id = auth.uid();
+end;
+$$;
+
+-- ============================================================
+-- 9) DETALLE DE RECLAMOS (solo comité/admin)
 -- ============================================================
 create or replace function public.reclamos_detalle()
 returns table (
-  id             uuid,
-  titulo         text,
-  descripcion    text,
-  categoria      text,
-  severidad      text,
-  estado         text,
-  respuesta      text,
-  nombre         text,
-  numero_casa    integer,
+  id              uuid,
+  titulo          text,
+  descripcion     text,
+  categoria       text,
+  severidad       text,
+  estado          text,
+  respuesta       text,
+  nombre          text,
+  numero_casa     integer,
   atendido_nombre text,
-  created_at     timestamptz,
-  resuelto_en    timestamptz
+  fotos           text[],
+  created_at      timestamptz,
+  updated_at      timestamptz,
+  resuelto_en     timestamptz
 )
 language plpgsql stable security definer
 set search_path = public
@@ -299,19 +398,18 @@ begin
            r.estado, r.respuesta,
            p.nombre, r.numero_casa,
            pa.nombre as atendido_nombre,
-           r.created_at, r.resuelto_en
+           coalesce(r.fotos, '{}'::text[]),
+           r.created_at, r.updated_at, r.resuelto_en
     from public.reclamos r
     left join public.profiles p  on p.id  = r.creado_por
     left join public.profiles pa on pa.id = r.atendido_por
+    where not r.eliminado
     order by r.created_at desc;
 end;
 $$;
 
 -- ============================================================
--- 8) RESPONDER / CAMBIAR ESTADO (solo comité/admin)
--- ============================================================
--- Función para actualizar estado y respuesta de un reclamo.
--- Registra automáticamente quién atendió y cuándo se resolvió.
+-- 10) RESPONDER / CAMBIAR ESTADO (solo comité/admin)
 -- ============================================================
 create or replace function public.responder_reclamo(
   p_id        uuid,
@@ -335,7 +433,8 @@ begin
   set estado      = p_estado,
       respuesta   = coalesce(p_respuesta, respuesta),
       atendido_por = auth.uid(),
-      resuelto_en = case when p_estado = 'resuelto' then now() else resuelto_en end
+      resuelto_en = case when p_estado = 'resuelto' then now() else resuelto_en end,
+      updated_at  = now()
   where id = p_id;
 
   if not found then
@@ -344,134 +443,6 @@ begin
 end;
 $$;
 
--- ============================================================
--- 9) ESTADÍSTICAS AGREGADAS
--- ============================================================
--- Función que retorna JSONB con todas las métricas agregadas:
---   - Total de reclamos y sugerencias
---   - Por estado, categoría, severidad, mes
---   - Por casa (para ranking)
---
--- Solo retorna conteos, sin detalles individuales.
--- Accesible por todos los usuarios autenticados.
--- ============================================================
-create or replace function public.estadisticas()
-returns jsonb
-language plpgsql stable security definer
-set search_path = public
-as $$
-declare
-  v_json jsonb;
-begin
-  select jsonb_build_object(
-    -- Reclamos: totales y desglose
-    'total', (select count(*)::int from public.reclamos),
-    'por_estado', (
-      select coalesce(jsonb_object_agg(estado, n order by
-        case estado when 'nuevo' then 1 when 'en_revision' then 2 when 'resuelto' then 3 else 4 end),
-        '{}'::jsonb)
-      from (select estado, count(*)::int as n from public.reclamos group by estado) t
-    ),
-    'por_categoria', (
-      select coalesce(jsonb_object_agg(categoria, n), '{}'::jsonb)
-      from (select categoria, count(*)::int as n from public.reclamos group by categoria) t
-    ),
-    'por_severidad', (
-      select coalesce(jsonb_object_agg(severidad, n), '{}'::jsonb)
-      from (select severidad, count(*)::int as n from public.reclamos group by severidad) t
-    ),
-    'por_mes', (
-      select coalesce(jsonb_agg(
-        jsonb_build_object('mes', to_char(m, 'YYYY-MM'), 'cantidad', n) order by m), '[]'::jsonb)
-      from (
-        select date_trunc('month', created_at)::date as m, count(*)::int as n
-        from public.reclamos group by 1
-      ) t
-    ),
-    'por_casa', (
-      select coalesce(jsonb_agg(
-        jsonb_build_object('casa', numero_casa, 'cantidad', n) order by numero_casa), '[]'::jsonb)
-      from (
-        select numero_casa, count(*)::int as n
-        from public.reclamos group by numero_casa
-      ) t
-    ),
-    -- Sugerencias: totales y desglose
-    'sug_total', (select count(*)::int from public.sugerencias),
-    'sug_por_estado', (
-      select coalesce(jsonb_object_agg(estado, n), '{}'::jsonb)
-      from (select estado, count(*)::int as n from public.sugerencias group by estado) t
-    ),
-    'sug_por_mes', (
-      select coalesce(jsonb_agg(
-        jsonb_build_object('mes', to_char(m, 'YYYY-MM'), 'cantidad', n) order by m), '[]'::jsonb)
-      from (
-        select date_trunc('month', created_at)::date as m, count(*)::int as n
-        from public.sugerencias group by 1
-      ) t
-    )
-  ) into v_json;
-
-  return v_json;
-end;
-$$;
-
--- ============================================================
--- 9bis) SUGERENCIAS DE VECINOS
--- ============================================================
--- Similar a reclamos pero sin campo de severidad ni categoría.
--- Los estados usan terminología femenina: nueva, resuelta.
--- ============================================================
-create table if not exists public.sugerencias (
-  id          uuid primary key default gen_random_uuid(),
-  creado_por  uuid references public.profiles(id) on delete set null,
-  numero_casa integer not null references public.casas(numero),
-  titulo      text not null check (length(titulo) between 3 and 200),
-  descripcion text not null check (length(descripcion) between 10 and 2000),
-  estado      text not null default 'nueva'
-              check (estado in ('nueva','en_revision','resuelta')),
-  respuesta   text,
-  atendido_por uuid references public.profiles(id) on delete set null,
-  created_at  timestamptz not null default now()
-);
-
-create index if not exists sugerencias_casa_idx on public.sugerencias(numero_casa);
-create index if not exists sugerencias_fecha_idx on public.sugerencias(created_at);
-
--- Detalle de sugerencias (solo comité/admin)
-create or replace function public.sugerencias_detalle()
-returns table (
-  id             uuid,
-  titulo         text,
-  descripcion    text,
-  estado         text,
-  respuesta      text,
-  nombre         text,
-  numero_casa    integer,
-  atendido_nombre text,
-  created_at     timestamptz
-)
-language plpgsql stable security definer
-set search_path = public
-as $$
-begin
-  if coalesce(public.mi_rol(),'') not in ('comite','admin') then
-    raise exception 'Sin permisos para ver el detalle de sugerencias.';
-  end if;
-
-  return query
-    select s.id, s.titulo, s.descripcion, s.estado, s.respuesta,
-           p.nombre, s.numero_casa,
-           pa.nombre as atendido_nombre,
-           s.created_at
-    from public.sugerencias s
-    left join public.profiles p  on p.id  = s.creado_por
-    left join public.profiles pa on pa.id = s.atendido_por
-    order by s.created_at desc;
-end;
-$$;
-
--- Responder / cambiar estado de sugerencia (solo comité/admin)
 create or replace function public.responder_sugerencia(
   p_id        uuid,
   p_estado    text,
@@ -493,7 +464,8 @@ begin
   update public.sugerencias
   set estado       = p_estado,
       respuesta    = coalesce(p_respuesta, respuesta),
-      atendido_por = auth.uid()
+      atendido_por = auth.uid(),
+      updated_at   = now()
   where id = p_id;
 
   if not found then
@@ -503,26 +475,243 @@ end;
 $$;
 
 -- ============================================================
--- 10) ROW LEVEL SECURITY (RLS)
+-- 11) ARCHIVAR (soft delete) y BORRAR DEFINITIVO
 -- ============================================================
--- Las políticas RLS son la capa principal de seguridad.
--- Reglas resumidas:
---
---   casas:      todos pueden SELECT (solo lectura)
---   profiles:   cada usuario ve SU perfil; comité/admin ven todos
---   reclamos:   vecino INSERT solo los suyos; SELECT solo los suyos
---               comité/admin SELECT todos via RPC
---   sugerencias: mismo patrón que reclamos
---
--- No hay INSERT/UPDATE directo sobre profiles: registrar_perfil()
--- es la única puerta de entrada. Los cambios de estado/respuesta
--- van por responder_reclamo() / responder_sugerencia().
+-- Archivar: comité/admin. Borrar definitivo: solo admin.
 -- ============================================================
+create or replace function public.archivar_reclamo(
+  p_id       uuid,
+  p_archivar boolean default true
+)
+returns void
+language plpgsql security definer
+set search_path = public
+as $$
+begin
+  if coalesce(public.mi_rol(),'') not in ('comite','admin') then
+    raise exception 'Sin permisos.';
+  end if;
 
-alter table public.casas      enable row level security;
-alter table public.profiles   enable row level security;
-alter table public.reclamos   enable row level security;
-alter table public.sugerencias enable row level security;
+  update public.reclamos
+  set eliminado     = p_archivar,
+      eliminado_en  = case when p_archivar then now() else null end,
+      eliminado_por = case when p_archivar then auth.uid() else null end,
+      updated_at    = now()
+  where id = p_id;
+
+  if not found then
+    raise exception 'Reclamo no encontrado.';
+  end if;
+end;
+$$;
+
+create or replace function public.archivar_sugerencia(
+  p_id       uuid,
+  p_archivar boolean default true
+)
+returns void
+language plpgsql security definer
+set search_path = public
+as $$
+begin
+  if coalesce(public.mi_rol(),'') not in ('comite','admin') then
+    raise exception 'Sin permisos.';
+  end if;
+
+  update public.sugerencias
+  set eliminado     = p_archivar,
+      eliminado_en  = case when p_archivar then now() else null end,
+      eliminado_por = case when p_archivar then auth.uid() else null end,
+      updated_at    = now()
+  where id = p_id;
+
+  if not found then
+    raise exception 'Sugerencia no encontrada.';
+  end if;
+end;
+$$;
+
+create or replace function public.borrar_reclamo(p_id uuid)
+returns void
+language plpgsql security definer
+set search_path = public
+as $$
+begin
+  if coalesce(public.mi_rol(),'') <> 'admin' then
+    raise exception 'Solo un administrador puede borrar reportes.';
+  end if;
+
+  delete from public.reclamos where id = p_id;
+  if not found then
+    raise exception 'Reclamo no encontrado.';
+  end if;
+end;
+$$;
+
+create or replace function public.borrar_sugerencia(p_id uuid)
+returns void
+language plpgsql security definer
+set search_path = public
+as $$
+begin
+  if coalesce(public.mi_rol(),'') <> 'admin' then
+    raise exception 'Solo un administrador puede borrar sugerencias.';
+  end if;
+
+  delete from public.sugerencias where id = p_id;
+  if not found then
+    raise exception 'Sugerencia no encontrada.';
+  end if;
+end;
+$$;
+
+-- ============================================================
+-- 12) DETALLE DE SUGERENCIAS (solo comité/admin)
+-- ============================================================
+create or replace function public.sugerencias_detalle()
+returns table (
+  id              uuid,
+  titulo          text,
+  descripcion     text,
+  estado          text,
+  respuesta       text,
+  nombre          text,
+  numero_casa     integer,
+  atendido_nombre text,
+  fotos           text[],
+  created_at      timestamptz,
+  updated_at      timestamptz
+)
+language plpgsql stable security definer
+set search_path = public
+as $$
+begin
+  if coalesce(public.mi_rol(),'') not in ('comite','admin') then
+    raise exception 'Sin permisos para ver el detalle de sugerencias.';
+  end if;
+
+  return query
+    select s.id, s.titulo, s.descripcion, s.estado, s.respuesta,
+           p.nombre, s.numero_casa,
+           pa.nombre as atendido_nombre,
+           coalesce(s.fotos, '{}'::text[]),
+           s.created_at, s.updated_at
+    from public.sugerencias s
+    left join public.profiles p  on p.id  = s.creado_por
+    left join public.profiles pa on pa.id = s.atendido_por
+    where not s.eliminado
+    order by s.created_at desc;
+end;
+$$;
+
+-- ============================================================
+-- 13) ESTADÍSTICAS AGREGADAS (excluye eliminados)
+-- ============================================================
+create or replace function public.estadisticas()
+returns jsonb
+language plpgsql stable security definer
+set search_path = public
+as $$
+declare
+  v_json jsonb;
+begin
+  select jsonb_build_object(
+    'total', (select count(*)::int from public.reclamos where not eliminado),
+    'por_estado', (
+      select coalesce(jsonb_object_agg(estado, n order by
+        case estado when 'nuevo' then 1 when 'en_revision' then 2 when 'resuelto' then 3 else 4 end),
+        '{}'::jsonb)
+      from (select estado, count(*)::int as n from public.reclamos where not eliminado group by estado) t
+    ),
+    'por_categoria', (
+      select coalesce(jsonb_object_agg(categoria, n), '{}'::jsonb)
+      from (select categoria, count(*)::int as n from public.reclamos where not eliminado group by categoria) t
+    ),
+    'por_severidad', (
+      select coalesce(jsonb_object_agg(severidad, n), '{}'::jsonb)
+      from (select severidad, count(*)::int as n from public.reclamos where not eliminado group by severidad) t
+    ),
+    'por_mes', (
+      select coalesce(jsonb_agg(
+        jsonb_build_object('mes', to_char(m, 'YYYY-MM'), 'cantidad', n) order by m), '[]'::jsonb)
+      from (
+        select date_trunc('month', created_at)::date as m, count(*)::int as n
+        from public.reclamos where not eliminado group by 1
+      ) t
+    ),
+    'por_casa', (
+      select coalesce(jsonb_agg(
+        jsonb_build_object('casa', numero_casa, 'cantidad', n) order by numero_casa), '[]'::jsonb)
+      from (
+        select numero_casa, count(*)::int as n
+        from public.reclamos where not eliminado group by numero_casa
+      ) t
+    ),
+    'sug_total', (select count(*)::int from public.sugerencias where not eliminado),
+    'sug_por_estado', (
+      select coalesce(jsonb_object_agg(estado, n), '{}'::jsonb)
+      from (select estado, count(*)::int as n from public.sugerencias where not eliminado group by estado) t
+    ),
+    'sug_por_mes', (
+      select coalesce(jsonb_agg(
+        jsonb_build_object('mes', to_char(m, 'YYYY-MM'), 'cantidad', n) order by m), '[]'::jsonb)
+      from (
+        select date_trunc('month', created_at)::date as m, count(*)::int as n
+        from public.sugerencias where not eliminado group by 1
+      ) t
+    )
+  ) into v_json;
+
+  return v_json;
+end;
+$$;
+
+-- ============================================================
+-- 14) LÍMITE ANTI-SPAM EN EL REGISTRO (auth.users)
+-- ============================================================
+-- Máximo 10 intentos de registro por hora y por correo.
+-- El registro sigue abierto; esto solo frena abuso automatizado.
+create or replace function auth.restringir_registro()
+returns trigger
+language plpgsql volatile
+set search_path = public, auth
+as $$
+declare
+  v_intentos integer;
+begin
+  delete from public.intentos_registro where creado_en < now() - interval '1 hour';
+
+  select count(*) into v_intentos
+  from public.intentos_registro
+  where email = lower(new.email);
+
+  if v_intentos >= 10 then
+    raise exception 'Demasiados intentos de registro con este correo. Espera una hora e inténtalo de nuevo.';
+  end if;
+
+  insert into public.intentos_registro (email, creado_en)
+  values (lower(new.email), now());
+
+  return new;
+end;
+$$;
+
+-- El trigger se crea con DROP IF EXISTS para ser idempotente.
+-- Nota: en algunos planes de Supabase puede requerir permisos
+-- elevados; si falla, ejecuta solo esta sección o contactar soporte.
+drop trigger if exists "restringir_registro_trg" on auth.users;
+create trigger "restringir_registro_trg"
+  before insert on auth.users
+  for each row execute function auth.restringir_registro();
+
+-- ============================================================
+-- 15) ROW LEVEL SECURITY (RLS)
+-- ============================================================
+alter table public.casas             enable row level security;
+alter table public.profiles          enable row level security;
+alter table public.reclamos          enable row level security;
+alter table public.sugerencias       enable row level security;
+alter table public.intentos_registro enable row level security;
 
 -- CASAS: lectura libre para todos los autenticados
 drop policy if exists "casas_lectura" on public.casas;
@@ -538,6 +727,12 @@ create policy "profiles_mi_miembro" on public.profiles
 drop policy if exists "profiles_comite_admin" on public.profiles;
 create policy "profiles_comite_admin" on public.profiles
   for select using (coalesce(public.mi_rol(),'') in ('comite','admin'));
+
+-- INTENTOS_REGISTRO: nadie puede leer ni escribir directamente
+-- (solo la función SECURITY DEFINER auth.restringir_registro).
+drop policy if exists "intentos_registro_cerrado" on public.intentos_registro;
+create policy "intentos_registro_cerrado" on public.intentos_registro
+  for select using (false);
 
 -- RECLAMOS INSERT: vecino crea reclamos solo a su nombre y casa
 drop policy if exists "reclamos_insert" on public.reclamos;
@@ -588,7 +783,50 @@ create policy "sugerencias_select_comite" on public.sugerencias
   using (coalesce(public.mi_rol(),'') in ('comite','admin'));
 
 -- ============================================================
--- 11) PRIMER ADMINISTRADOR
+-- 16) STORAGE — BUCKET PRIVADO "reportes" (fotos adjuntas)
+-- ============================================================
+-- Cada foto se sube a:  reportes/{user_id}/{uuid}.jpg
+-- Vecino: sube y lee SOLO en su propia carpeta.
+-- Comité/Admin: leen todo (para revisar los reportes).
+-- ============================================================
+insert into storage.buckets (id, name, public)
+values ('reportes', 'reportes', false)
+on conflict (id) do nothing;
+
+drop policy if exists "reportes_upload_owner" on storage.objects;
+create policy "reportes_upload_owner" on storage.objects
+  for insert to authenticated
+  with check (
+    bucket_id = 'reportes'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+drop policy if exists "reportes_lectura_owner" on storage.objects;
+create policy "reportes_lectura_owner" on storage.objects
+  for select to authenticated
+  using (
+    bucket_id = 'reportes'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+drop policy if exists "reportes_lectura_comite" on storage.objects;
+create policy "reportes_lectura_comite" on storage.objects
+  for select to authenticated
+  using (
+    bucket_id = 'reportes'
+    and coalesce(public.mi_rol(),'') in ('comite','admin')
+  );
+
+drop policy if exists "reportes_delete_owner" on storage.objects;
+create policy "reportes_delete_owner" on storage.objects
+  for delete to authenticated
+  using (
+    bucket_id = 'reportes'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+-- ============================================================
+-- 17) PRIMER ADMINISTRADOR
 -- ============================================================
 -- Ejecutar en el SQL Editor después de crear la primera cuenta
 -- como vecino desde la interfaz web:

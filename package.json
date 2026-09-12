@@ -1,0 +1,13 @@
+{
+  "name": "casas-del-parque-7-full",
+  "version": "2.0.0",
+  "description": "Plataforma comunitaria de reporte y sugerencias para Casas del Parque 7 (sin framework, sin build).",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/",
+    "icons": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/make-icons.ps1"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

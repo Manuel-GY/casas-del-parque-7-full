@@ -6,9 +6,12 @@
   <meta name="theme-color" content="#14532d">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="description" content="Plataforma oficial de gestión comunitaria de Casas del Parque 7. Sistema de reclamos y sugerencias sobre el servicio de guardias y seguridad.">
-  <title>Casas del Parque 7 — Reclamos</title>
+  <meta name="apple-mobile-web-app-title" content="CDP7">
+  <meta name="description" content="Plataforma oficial de gestión comunitaria de Casas del Parque 7 (146 casas). Reclamos y sugerencias de todo el condominio: seguridad, instalaciones, plazas, calles, luminarias, aseo y estacionamientos.">
+  <title>Casas del Parque 7 — Comunidad</title>
+  <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2314532d'/%3E%3Ccircle cx='32' cy='14' r='4' fill='%23fbbf24'/%3E%3Cpath d='M10 30L32 14l22 16' stroke='%23fbbf24' stroke-width='4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Crect x='16' y='30' width='32' height='24' rx='2' fill='%23fbbf24'/%3E%3Crect x='26' y='38' width='12' height='16' rx='2' fill='%2314532d'/%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -24,10 +27,10 @@
           </svg>
         </div>
         <h1>Casas del Parque 7</h1>
-        <p class="tagline">Reclamos de la comunidad sobre el servicio de guardias</p>
+        <p class="tagline">Reportes y sugerencias de toda la comunidad</p>
       </div>
 
-      <div id="msg" class="msg"></div>
+      <div id="msg" class="msg" aria-live="polite"></div>
 
       <div class="tabs" id="auth-tabs">
         <button class="tab active" data-view="login">Iniciar sesión</button>
@@ -44,6 +47,20 @@
           </label>
           <button class="btn primary" id="login-btn" type="submit">Entrar</button>
         </form>
+
+        <div id="forgot-box" class="card-flat" hidden>
+          <h2 class="recovery-title">🔑 ¿Olvidaste tu contraseña?</h2>
+          <p class="sub">Te enviaremos un correo para restablecerla.</p>
+          <form id="forgot-form" autocomplete="off">
+            <label>Tu correo
+              <input type="email" id="forgot-email" required>
+            </label>
+            <button class="btn primary" id="forgot-btn" type="submit">Enviar enlace</button>
+            <p class="forgot-link"><a href="#" id="link-back-login">← Volver a iniciar sesión</a></p>
+          </form>
+        </div>
+
+        <p class="forgot-link"><a href="#" id="link-forgot">¿Olvidaste tu contraseña?</a></p>
       </div>
 
       <div id="view-register" class="view" hidden>
@@ -66,6 +83,23 @@
         </form>
       </div>
 
+      <div id="view-recovery" class="view" hidden>
+        <div class="card-flat">
+          <h2 class="recovery-title">🔑 Restablecer contraseña</h2>
+          <p class="sub">Ingresa tu nueva contraseña para recuperar el acceso a tu comunidad.</p>
+          <form id="recovery-form" autocomplete="off">
+            <label>Nueva contraseña
+              <input type="password" id="recovery-pass" required minlength="6" autocomplete="new-password">
+            </label>
+            <label>Confirmar nueva contraseña
+              <input type="password" id="recovery-pass2" required minlength="6" autocomplete="new-password">
+            </label>
+            <button class="btn primary" id="recovery-btn" type="submit">Guardar nueva contraseña</button>
+            <p class="hint">Después de guardarla podrás iniciar sesión normalmente.</p>
+          </form>
+        </div>
+      </div>
+
       <p class="privacy-inline"><a href="#" id="link-privacy">🔒 Política de Privacidad y Seguridad</a></p>
     </div>
   </div>
@@ -80,7 +114,7 @@
         <p>En <b>Casas del Parque 7</b>, la privacidad de los vecinos y la protección de sus datos constituyen una prioridad fundamental de la administración del condominio.</p>
 
         <h3>1. Tratamiento de Datos Personales</h3>
-        <p>Los datos registrados (nombre, correo electrónico y número de casa) se utilizan <b>exclusivamente</b> para la gestión interna de reclamos y sugerencias, así como para la coordinación del servicio de guardias. En ningún caso son compartidos con terceros ajenos a la administración de la comunidad.</p>
+        <p>Los datos registrados (nombre, correo electrónico y número de casa) se utilizan <b>exclusivamente</b> para la gestión interna de reclamos y sugerencias de la comunidad. En ningún caso son compartidos con terceros ajenos a la administración del condominio.</p>
 
         <h3>2. Confidencialidad de las Solicitudes</h3>
         <p>Cada reclamo y sugerencia es de carácter <b>confidencial</b>. Solo el vecino que lo presenta, su casa (hasta un máximo de dos usuarios) y los responsables de la administración y el comité tienen acceso a su contenido, de modo que ningún otro residente puede consultar las solicitudes de otra casa.</p>
@@ -90,13 +124,18 @@
 
         <h3>4. Estadísticas Comunitarias</h3>
         <p>Los indicadores y gráficos publicados para la comunidad presentan información de carácter general y agregado (cantidad de solicitudes por mes o por categoría). En ningún caso revelan la identidad de los vecinos ni el contenido particular de sus solicitudes.</p>
+
+        <h3>5. Fotografías Adjuntas</h3>
+        <p>Las fotografías que acompañen un reporte se almacenan en un espacio privado y protegido. Solo el vecino que las publicó y la administración/comité pueden visualizarlas.</p>
       </div>
     </div>
   </div>
 
-  <script src="config.js"></script>
+  <script src="./config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="js/auth.js"></script>
-  <script src="js/index.js"></script>
+  <script src="./js/pure.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/register-sw.js"></script>
+  <script src="./js/index.js"></script>
 </body>
 </html>

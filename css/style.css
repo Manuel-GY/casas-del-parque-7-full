@@ -556,3 +556,111 @@ footer.site {
   color: var(--forest);
 }
 .modal-body p { margin: 0 0 10px; }
+
+/* ---------- Campana de novedades ---------- */
+.bell {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 12px;
+  background: #f1f5f9;
+  color: var(--forest);
+  cursor: pointer;
+  transition: .15s;
+}
+.bell:hover { background: #e2e8f0; }
+.bell:active { transform: scale(.94); }
+.bell-count {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 18px;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(220, 38, 38, .4);
+}
+
+/* ---------- Fotos adjuntas ---------- */
+.foto-upload { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.foto-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 2px dashed #bbf7d0;
+  background: #f0fdf4;
+  color: var(--forest);
+  font-size: 13px;
+  font-weight: 800;
+  padding: 10px 14px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: .15s;
+  width: auto;
+}
+.foto-btn:hover { border-color: var(--leaf); background: #dcfce7; }
+.fotos-preview { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+.foto-thumb {
+  width: 92px;
+  height: 68px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 2px solid var(--line);
+  background: #f1f5f9;
+}
+#recl-fotos-preview .foto-thumb,
+#sug-fotos-preview .foto-thumb {
+  cursor: zoom-in;
+  border: 2px solid var(--leaf);
+}
+#recl-fotos-preview .foto-thumb:hover,
+#sug-fotos-preview .foto-thumb:hover { filter: brightness(.92); }
+.fotos-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.reclamo .fotos-row .foto-thumb { width: 96px; height: 72px; cursor: pointer; }
+.reclamo .fotos-row .foto-thumb:hover { border-color: var(--leaf); }
+
+/* ---------- Acciones de administración ---------- */
+.admin-acciones {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line);
+}
+.btn.danger { color: #b91c1c; border-color: #fecaca; }
+.btn.danger:hover { border-color: #b91c1c; color: #b91c1c; background: #fef2f2; }
+
+/* ---------- Recuperación de contraseña (login) ---------- */
+.forgot-link { margin: 4px 0 0; text-align: center; font-size: 12.5px; }
+.forgot-link a {
+  color: var(--muted);
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+  transition: color .15s;
+}
+.forgot-link a:hover { color: var(--forest); }
+.card-flat {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-top: 6px;
+}
+.recovery-title { font-size: 16px; color: var(--forest); margin: 0 0 6px; }
+.card-flat .sub { font-size: 12px; color: var(--muted); font-weight: 600; margin: 0 0 12px; }
+.card-flat form { display: grid; gap: 12px; }
+
+/* Tarjeta de novedad dentro de la app */
+.reclamo.novedad { border-color: #fde68a; background: #fffbeb; }

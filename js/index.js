@@ -4,8 +4,9 @@
  * Se ejecuta exclusivamente en index.html. Maneja:
  *   - Pestaas de Login / Registro
  *   - Inicio de sesion con email + password (Supabase Auth)
- *   - Registro de nuevos vecinos ( signUp + registrar_perfil RPC )
- *   - Validaciones basicas de formato de correo
+ *   - Registro de nuevos vecinos (signUp + registrar_perfil RPC)
+ *   - Recuperacion de contrasena (resetPasswordForEmail)
+ *   - Restablecimiento de contrasena al llegar con el token del correo
  *
  * Flujo de registro:
  *   1. signUp() crea la cuenta en auth.users
@@ -18,9 +19,6 @@
 
   /**
    * Puebla un <select> con opciones desde un mapa { clave: texto }.
-   * @param {HTMLSelectElement} select
-   * @param {Object} map - Mapa de clave -> texto
-   * @param {string} [selKey] - Clave a pre-seleccionar
    */
   function llenarOpciones(select, map, selKey) {
     if (!select) return;
@@ -36,7 +34,6 @@
 
   /**
    * Alterna entre las vistas de Login y Registro.
-   * @param {HTMLButtonElement} btn - Tab clickeado
    */
   function activarTab(btn) {
     var tabs = document.querySelectorAll("#auth-tabs .tab");
@@ -46,15 +43,37 @@
     document.getElementById("view-register").hidden = (btn.dataset.view !== "register");
   }
 
+  /** Muestra el resto de la UI de login (o la oculta mientras se recupera). */
+  function setLoginVisible(visible) {
+    var tabs = document.getElementById("auth-tabs");
+    var f = document.getElementById("login-form");
+    var fr = document.getElementById("forgot-box");
+    var link = document.getElementById("link-forgot");
+    if (tabs) tabs.style.display = visible ? "" : "none";
+    if (f) f.style.display = visible ? "" : "none";
+    if (link) link.style.display = visible ? "" : "none";
+    if (fr) fr.hidden = visible;
+  }
+
   /**
-   * Maneja el submit del formulario de inicio de sesion.
-   * Usa signInWithPassword de Supabase Auth.
-   *
-   * Feedback de UX al usuario:
-   *   - Mientras autentica: spinner en el boton ("Entrando...").
-   *   - Al exito: mensaje verde en #msg y redireccion a app.html tras 1s.
-   *   - Al fallar: mensaje rojo con el error traducido.
+   * Cuando llega correo de recuperacion (link con token), Supabase emite
+   * el evento PASSWORD_RECOVERY y una session temporal. Mostramos el
+   * formulario para definir la nueva contrasena.
    */
+  function activarModoRecuperacion() {
+    // Ocultar login/registro y mostrar la tarjeta de nueva contrasena
+    var tabs = document.getElementById("auth-tabs");
+    if (tabs) tabs.style.display = "none";
+    document.getElementById("view-login").hidden = true;
+    document.getElementById("view-register").hidden = true;
+    document.getElementById("view-recovery").hidden = false;
+    SBH.mostrar("msg", "Crea tu nueva contraseña para recuperar el acceso.", "ok");
+  }
+
+  /* ------------------------------------------------------------------ */
+  /*  Login / Registro                                                  */
+  /* ------------------------------------------------------------------ */
+
   function onLoginForm(e) {
     e.preventDefault();
     var email = document.getElementById("login-email").value.trim();
@@ -70,21 +89,11 @@
           SBH.mostrar("msg", SBH.fmtErr(res.error.message), "error");
           return null;
         }
-        // Exito: mostrar confirmacion y redirigir al panel principal
         SBH.mostrar("msg", "¡Inicio de sesión exitoso! Bienvenido de nuevo.", "ok");
         setTimeout(function () { window.location.href = "app.html"; }, 1000);
       });
   }
 
-  /**
-   * Maneja el submit del formulario de registro.
-   *
-   * Flujo:
-   *   1. Validacion basica de correo en frontend
-   *   2. signUp() en Supabase Auth
-   *   3. Si hay session inmediata -> registrar_perfil() RPC
-   *   4. Si no hay session -> aviso de confirmacion por correo
-   */
   function onRegisterForm(e) {
     e.preventDefault();
     var nombre = document.getElementById("reg-name").value.trim();
@@ -108,11 +117,9 @@
           }
           return null;
         }
-        // Si no hay session, el usuario debe confirmar su correo
         if (!res.data || !res.data.session) {
           return res;
         }
-        // Hay session: crear perfil en la tabla profiles via RPC
         return SB.client.rpc("registrar_perfil", { p_nombre: nombre, p_casa: casa, p_rol: "vecino" })
           .then(function (pr) {
             if (pr.error) {
@@ -134,12 +141,65 @@
       });
   }
 
+  /* ------------------------------------------------------------------ */
+  /*  Recuperacion de contrasena                                        */
+  /* ------------------------------------------------------------------ */
+
+  function onForgotForm(e) {
+    e.preventDefault();
+    var email = document.getElementById("forgot-email").value.trim();
+    var btn = document.getElementById("forgot-btn");
+    SBH.mostrar("msg", "", "ok");
+    if (!SB.configOk) { SBH.mostrar("msg", configFallback(), "error"); return; }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { SBH.mostrar("msg", "Revisa el correo: parece no ser válido.", "error"); return; }
+
+    cargando(btn, true, "Enviando...");
+    var redirectTo = window.location.origin + window.location.pathname;
+    SB.client.auth.resetPasswordForEmail(email, { redirectTo: redirectTo })
+      .then(function (res) {
+        cargando(btn, false, "Enviar enlace");
+        if (res.error) {
+          SBH.mostrar("msg", SBH.fmtErr(res.error.message), "error");
+          return;
+        }
+        SBH.mostrar("msg", "Te enviamos un enlace a " + email + ". Revisa tu bandeja de entrada.", "ok");
+        setLoginVisible(true);
+      });
+  }
+
+  async function onRecoveryForm(e) {
+    e.preventDefault();
+    var p1 = document.getElementById("recovery-pass").value;
+    var p2 = document.getElementById("recovery-pass2").value;
+    var btn = document.getElementById("recovery-btn");
+    SBH.mostrar("msg", "", "ok");
+    if (p1.length < 6) { SBH.mostrar("msg", "La contraseña debe tener al menos 6 caracteres.", "error"); return; }
+    if (p1 !== p2) { SBH.mostrar("msg", "Las contraseñas no coinciden. Revisa e inténtalo de nuevo.", "error"); return; }
+    if (!SB.configOk) { SBH.mostrar("msg", configFallback(), "error"); return; }
+
+    cargando(btn, true, "Guardando...");
+    var res = await SB.client.auth.updateUser({ password: p1 });
+    cargando(btn, false, "Guardar nueva contraseña");
+    if (res.error) {
+      SBH.mostrar("msg", SBH.fmtErr(res.error.message), "error");
+      return;
+    }
+    await SB.client.auth.signOut();
+    document.getElementById("view-recovery").hidden = true;
+    document.getElementById("view-login").hidden = false;
+    var tabs = document.getElementById("auth-tabs");
+    if (tabs) tabs.style.display = "";
+    var registrar = document.getElementById("view-register");
+    if (registrar) registrar.hidden = true;
+    SBH.mostrar("msg", "¡Contraseña restablecida! Inicia sesión con tu nueva contraseña.", "ok");
+  }
+
+  /* ------------------------------------------------------------------ */
+  /*  Helpers                                                           */
+  /* ------------------------------------------------------------------ */
+
   /**
-   * Alterna el estado de carga de un boton.
-   * Muestra un spinner + texto mientras carga, y restaura el texto original al terminar.
-   * @param {HTMLButtonElement} btn
-   * @param {boolean} on - true = cargando (deshabilitar + spinner), false = habilitar
-   * @param {string} txt - Texto a mostrar mientras carga
+   * Alterna el estado de carga de un boton (spinner + texto).
    */
   function cargando(btn, on, txt) {
     if (!btn) return;
@@ -158,7 +218,7 @@
   }
 
   function configFallback() {
-    return "Falta conectar Supabase: pega la URL y la anon key en config.js. Sin eso el registro no puede funcionar.";
+    return "Falta conectar Supabase: pega la URL y la anon key de tu proyecto nuevo en config.js.";
   }
 
   /* ------------------------------------------------------------------ */
@@ -175,11 +235,44 @@
       t.addEventListener("click", function () { activarTab(t); });
     });
 
-    // Poblar select de casas (1-142)
+    // Poblar select de casas (1-146)
     SBH.llenarCasas(document.getElementById("reg-casa"));
 
     // Vincular formularios
     loginForm.addEventListener("submit", onLoginForm);
     document.getElementById("register-form").addEventListener("submit", onRegisterForm);
+
+    // Recuperacion de contrasena
+    var linkForgot = document.getElementById("link-forgot");
+    if (linkForgot) {
+      linkForgot.addEventListener("click", function (e) {
+        e.preventDefault();
+        setLoginVisible(false);
+        SBH.mostrar("msg", "", "ok");
+        document.getElementById("forgot-email").focus();
+      });
+    }
+
+    var linkBack = document.getElementById("link-back-login");
+    if (linkBack) {
+      linkBack.addEventListener("click", function (e) {
+        e.preventDefault();
+        setLoginVisible(true);
+        SBH.mostrar("msg", "", "ok");
+      });
+    }
+
+    var forgotForm = document.getElementById("forgot-form");
+    if (forgotForm) forgotForm.addEventListener("submit", onForgotForm);
+
+    var recoveryForm = document.getElementById("recovery-form");
+    if (recoveryForm) recoveryForm.addEventListener("submit", onRecoveryForm);
+
+    // Anticipar el modo recuperacion si la sesion ya trae el token
+    if (SB.configOk) {
+      SB.client.auth.onAuthStateChange(function (event) {
+        if (event === "PASSWORD_RECOVERY") activarModoRecuperacion();
+      });
+    }
   });
 })();

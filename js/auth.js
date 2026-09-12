@@ -7,6 +7,9 @@
  *   SB  — Configuracion de la app (categorias, estados, cliente Supabase)
  *   SBH — Funciones de ayuda (mostrar mensajes, escapar HTML, etc.)
  *
+ * Se apoya en js/pure.js (helpers sin DOM, testables) que debe cargarse
+ * ANTES en las paginas.
+ *
  * Seguridad: La anon key es publica por disenio de Supabase. Todas las
  * restricciones de acceso estan garantizadas por Row Level Security (RLS)
  * en PostgreSQL. Ver sql/schema.sql para el detalle de las politicas.
@@ -20,11 +23,12 @@
 
   var cfg = window.APP_CONFIG || {};
   var supabaseLoaded = (typeof supabase !== "undefined");
+  var pure = window.PURE || {};
 
   /** Objeto principal con catalogos y el cliente de base de datos. */
   var SB = {
-    CATEGORIAS: {
-      seguridad: "Seguridad y guardias",
+    CATEGORIAS: pure.CATEGORIAS || {
+      seguridad: "Seguridad",
       instalaciones: "Estado de instalaciones",
       plazas: "Plazas y áreas comunes",
       calles: "Calles y veredas",
@@ -33,18 +37,19 @@
       estacionamientos: "Estacionamientos",
       otro: "Otros"
     },
-    ESTADOS: { nuevo: "Nuevo", en_revision: "En revisión", resuelto: "Resuelto" },
+    ESTADOS: pure.ESTADOS || { nuevo: "Nuevo", en_revision: "En revisión", resuelto: "Resuelto" },
     client: null,
     configOk: false
   };
 
   /**
    * Valida que la configuracion exista y no sea el placeholder por defecto.
-   * El check indexOf("PEGA") detecta si el usuario no reemplazo el texto
-   * de ejemplo en config.js ("PEGA_AQUI...").
+   * Detecta "PEGA" (formato viejo) y "TU-PROYECTO"/"TU_ANON_KEY" (formato
+   * actual de config.example.js).
    */
   SB.configOk = !!(supabaseLoaded && cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY &&
-    cfg.SUPABASE_URL.indexOf("PEGA") === -1 && cfg.SUPABASE_ANON_KEY.indexOf("PEGA") === -1);
+    cfg.SUPABASE_URL.indexOf("PEGA") === -1 && cfg.SUPABASE_ANON_KEY.indexOf("PEGA") === -1 &&
+    cfg.SUPABASE_URL.indexOf("TU-PROYECTO") === -1 && cfg.SUPABASE_ANON_KEY.indexOf("TU_ANON_KEY") === -1);
 
   if (SB.configOk) {
     try {
@@ -60,16 +65,10 @@
 
   /**
    * Devuelve la etiqueta legible de una categoria de reporte.
-   * Compatible con categorias antiguas (acceso, comportamiento, turnos)
-   * que fueron migradas a 'seguridad' en la base de datos.
+   * Compatible con categorias antiguas migradas a 'seguridad'.
    */
   function catLabel(clave) {
-    var legado = {
-      acceso: "Seguridad y guardias",
-      comportamiento: "Seguridad y guardias",
-      turnos: "Seguridad y guardias"
-    };
-    return SB.CATEGORIAS[clave] || legado[clave] || clave;
+    return pure.catLabel ? pure.catLabel(clave) : clave;
   }
 
   /**
@@ -97,68 +96,33 @@
 
   /**
    * Formatea una fecha ISO a formato legible en espanol chileno.
-   * @param {string} iso - Fecha en formato ISO 8601
-   * @returns {string} Fecha formateada (ej: "05 sep 2026, 14:30")
+   * Delega en js/pure.js (sin DOM).
    */
   function fmtFecha(iso) {
-    if (!iso) return "";
-    var d = new Date(iso);
-    if (isNaN(d.getTime())) return "";
-    return d.toLocaleString("es-CL", {
-      day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit"
-    });
+    return pure.fmtFecha ? pure.fmtFecha(iso) : "";
   }
 
   /**
    * Traduce mensajes de error tecnicos de Supabase/PostgreSQL a mensajes
-   * amigables para el usuario final. Cubre: errores de conexion, auth,
-   * validacion de check constraints, RLS, rate limiting, JWT, etc.
+   * amigables para el usuario final. Delega en js/pure.js.
    */
   function fmtErr(m) {
-    var s = String((m == null) ? "" : m);
-    if (/could not find the function|schema cache/i.test(s))
-      return "La base de datos no está actualizada. Ejecuta el sql/schema.sql completo en el SQL Editor de Supabase.";
-    if (/failed to fetch|networkerror|load failed|fetch failed|timeout/i.test(s))
-      return "No hay conexión con Supabase. Revisa tu internet e inténtalo de nuevo.";
-    if (/already registered|already been registered|email already/i.test(s))
-      return "Ese correo ya está registrado. Prueba iniciando sesión.";
-    if (/invalid login credentials|invalid email or password/i.test(s))
-      return "Correo o contraseña incorrectos.";
-    if (/too many (requests|attempts)|rate limit|429/i.test(s))
-      return "Demasiadas solicitudes en poco tiempo. Espera un momento y vuelve a intentarlo.";
-    if (/jwt expired|invalid jwt|token has expired|not authorized|signed out/i.test(s))
-      return "Tu sesión expiró. Vuelve a iniciar sesión.";
-    if (/new password should be different|different from the old|same as (the )?old password/i.test(s))
-      return "La nueva contraseña debe ser diferente a la contraseña anterior.";
-    if (/password should be at least/i.test(s))
-      return "La contraseña debe tener al menos 6 caracteres.";
-    if (/weak password/i.test(s))
-      return "La contraseña ingresada es demasiado débil.";
-    if (/violates check constraint.*descripcion/i.test(s))
-      return "El detalle/descripción debe tener al menos 10 y máximo 2000 caracteres.";
-    if (/violates check constraint.*titulo/i.test(s))
-      return "El título debe tener al menos 3 y máximo 200 caracteres.";
-    if (/violates check constraint.*nombre/i.test(s))
-      return "El nombre debe tener entre 1 y 120 caracteres.";
-    if (/violates check constraint/i.test(s))
-      return "Los datos ingresados no cumplen con los límites de longitud requeridos (mínimo 10 caracteres en la descripción).";
-    if (/violates row-level security policy/i.test(s))
-      return "No tienes permisos para realizar esta acción.";
-    return s;
+    return pure.fmtErr ? pure.fmtErr(m) : String((m == null) ? "" : m);
   }
 
   /**
-   * Llena un <select> con las 142 casas del condominio.
+   * Llena un <select> con las 146 casas del condominio.
    * Usa DocumentFragment para minimizar reflows del DOM.
    * @param {HTMLSelectElement} select - Elemento select a poblar
    */
   function llenarCasas(select) {
     if (!select || select.options.length) return;
+    var numeros = (pure.rangoCasas ? pure.rangoCasas() : []);
     var frag = document.createDocumentFragment();
-    for (var i = 1; i <= 142; i++) {
+    for (var i = 0; i < numeros.length; i++) {
       var o = document.createElement("option");
-      o.value = i;
-      o.textContent = "Casa " + i;
+      o.value = numeros[i];
+      o.textContent = "Casa " + numeros[i];
       frag.appendChild(o);
     }
     select.appendChild(frag);
@@ -194,7 +158,7 @@
       if (e.target === modal) cerrar();
     });
 
-    // #7: Cerrar con tecla Escape para accesibilidad
+    // Cerrar con tecla Escape para accesibilidad
     document.addEventListener("keydown", function (e) {
       if (e.key === "Escape" && !modal.classList.contains("hidden")) {
         cerrar();

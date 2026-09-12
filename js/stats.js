@@ -534,10 +534,11 @@
 
   /**
    * Formatea una cadena "YYYY-MM" a formato corto: "ene 26", "feb 26", etc.
-   * @param {string} ym - Cadena en formato "YYYY-MM"
-   * @returns {string} Fecha formateada
+   * Delegado a js/pure.js (helper sin DOM, testeable).
    */
   function fmtMes(ym) {
+    var pure = window.PURE || {};
+    if (pure.fmtMes) return pure.fmtMes(ym);
     var meses = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
     var p = String(ym).split("-");
     if (p.length < 2) return ym;

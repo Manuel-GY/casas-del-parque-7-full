@@ -4,7 +4,9 @@
  * Se ejecuta exclusivamente en app.html. Maneja:
  *   - Sesion y perfil del usuario (carga, validacion, cambio de contrasena)
  *   - Navegacion por pestaas (vecino vs comite/admin)
- *   - CRUD de reclamos y sugerencias (envio, listado, respuesta)
+ *   - CRUD de reclamos y sugerencias (envio, listado, respuesta, fotos)
+ *   - Novedades dentro de la app (campana con badge + lista)
+ *   - Archivar y borrar reportes (comité/admin)
  *   - Estadisticas comunitarias con graficos Canvas
  *   - Exportacion a CSV compatible con Excel
  *   - Gestion de usuarios (solo admin)
@@ -12,14 +14,7 @@
  * Seguridad:
  *   - Todas las operaciones de lectura/escritura van contra Supabase
  *   - Las restricciones de acceso las controla RLS en PostgreSQL
- *   - Las funciones RPC (reclamos_detalle, responder_reclamo, etc.)
- *     validan el rol del usuario dentro de SECURITY DEFINER
- *
- * Mejoras aplicadas:
- *   - Flags para evitar duplicacion de event listeners (#4)
- *   - Loading states en todas las secciones (#5)
- *   - Confirmacion antes de cambiar rol de usuario (#6)
- *   - Paginacion en listas de reclamos/sugerencias (#9)
+ *   - Las funciones RPC validan el rol del usuario dentro de SECURITY DEFINER
  */
 (function () {
   "use strict";
@@ -37,50 +32,90 @@
   var busquedaSug = "";
 
   /* ------------------------------------------------------------------ */
-  /*  Flags para evitar duplicacion de event listeners (#4)              */
-  /*                                                                     */
-  /*  Problema: boot() se llama al cargar la pagina Y despues de cambiar */
-  /*  contrasena. Sin estos flags, llenarReclamoForm() y                */
-  /*  llenarSugerenciaForm() adjuntarian listeners duplicados.          */
+  /*  Flags para evitar duplicacion de event listeners                   */
   /* ------------------------------------------------------------------ */
   var _reclamoBound = false;
   var _sugerenciaBound = false;
+  var _novedadesBound = false;
 
   /* ------------------------------------------------------------------ */
-  /*  Paginacion (#9)                                                    */
-  /*                                                                     */
-  /*  Muestra 20 registros por pagina en las listas de comite/admin.    */
-  /*  Las listas del vecino (mis reclamos / mis sugerencias) no se      */
-  /*  paginan porque normalmente son pocas.                             */
+  /*  Paginacion                                                         */
   /* ------------------------------------------------------------------ */
   var PAGE_SIZE = 20;
   var recPage = 1;
   var sugPage = 1;
 
   /* ------------------------------------------------------------------ */
+  /*  Novedades (campana)                                                */
+  /* ------------------------------------------------------------------ */
+  var vistoHasta = null;     // Baseline desde el que se cuentan novedades
+  var novEdades = [];        // Cache de novedades
+  var pollTimer = null;
+
+  /* ------------------------------------------------------------------ */
+  /*  Fotos adjuntas                                                     */
+  /* ------------------------------------------------------------------ */
+  var fotosRecl = [];        // File[] pendientes para el proximo reporte
+  var fotosSug = [];         // File[] pendientes para la proxima sugerencia
+  var MAX_FOTOS = 5;
+
+  /* ------------------------------------------------------------------ */
   /*  Helpers                                                            */
   /* ------------------------------------------------------------------ */
 
-  /** Genera un badge HTML para chips de estado. */
   function chip(txt, css) {
     return '<span class="chip ' + css + '">' + SBH.esc(txt) + "</span>";
   }
 
-  /** Muestra texto de carga mientras se obtienen datos del servidor. */
   function showLoading(wrapId) {
     var wrap = document.getElementById(wrapId);
     if (wrap) wrap.innerHTML = '<p class="hint">Cargando...</p>';
+  }
+
+  function uid() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+      var r = Math.random() * 16 | 0;
+      var v = c === "x" ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  }
+
+  /** Genera el HTML de miniaturas con data-foto para hidratar luego. */
+  function fotosHtml(fotos) {
+    var arr = fotos || [];
+    if (!arr.length) return "";
+    return '<div class="fotos-row">' + arr.map(function (f) {
+      return '<img class="foto-thumb" data-foto="' + SBH.esc(f) + '" alt="Foto adjunta" loading="lazy">';
+    }).join("") + "</div>";
+  }
+
+  /**
+   * Resuelve las URLs firmadas de las fotos y las asigna a las imagenes.
+   * Se llama despues de cada render con fotos.
+   */
+  function hidratarFotos(scope) {
+    if (!scope || !SB.client) return;
+    var imgs = scope.querySelectorAll(".foto-thumb");
+    for (var i = 0; i < imgs.length; i++) {
+      (function (img) {
+        var path = img.getAttribute("data-foto");
+        if (!path) { img.style.display = "none"; return; }
+        SB.client.storage.from("reportes").createSignedUrl(path, 3600).then(function (r) {
+          if (!r.error && r.data && r.data.signedUrl) {
+            img.src = r.data.signedUrl;
+          } else {
+            img.style.display = "none";
+          }
+        });
+      })(imgs[i]);
+    }
   }
 
   /* ------------------------------------------------------------------ */
   /*  Sesion / perfil                                                    */
   /* ------------------------------------------------------------------ */
 
-  /**
-   * Construye la barra de navegacion por pestanas segun el rol del usuario.
-   * - Vecino: Nuevo, Mis Reclamos, Sugerir, Mis Sugerencias, Estadisticas
-   * - Comite/Admin: Reclamos, Sugerencias, Estadisticas (, Usuarios si admin)
-   */
   async function definirNav() {
     var nav = document.getElementById("nav");
     nav.innerHTML = "";
@@ -115,12 +150,8 @@
     mostrarSeccion(tabs[0].id);
   }
 
-  /**
-   * Muestra una seccion ocultando todas las demas.
-   * Tambien dispara la carga de datos cuando la seccion lo requiere.
-   */
   function mostrarSeccion(id) {
-    var secciones = ["sec-nuevo", "sec-mios", "sec-sugerir", "sec-mias", "sec-reclamos", "sec-sugerencias", "sec-stats", "sec-usuarios"];
+    var secciones = ["sec-nuevo", "sec-mios", "sec-sugerir", "sec-mias", "sec-novedades", "sec-reclamos", "sec-sugerencias", "sec-stats", "sec-usuarios"];
     secciones.forEach(function (s) { document.getElementById(s).hidden = (s !== id); });
     document.querySelectorAll("#nav .tab").forEach(function (t) {
       t.classList.toggle("active", t.dataset.target === id);
@@ -128,23 +159,16 @@
 
     if (id === "sec-mios") cargarMios();
     if (id === "sec-mias") cargarMias();
+    if (id === "sec-novedades") abrirNovedades();
     if (id === "sec-reclamos") cargarReclamos();
     if (id === "sec-sugerencias") cargarSugerencias();
     if (id === "sec-stats") setTimeout(cargarStats, 40);
     if (id === "sec-usuarios") cargarUsuarios();
   }
 
-  /**
-   * Inicializacion principal de la sesion.
-   * Verifica autenticacion, carga perfil, y decide que vista mostrar:
-   *   - Sin sesion -> redirigir a index.html
-   *   - Sin perfil -> mostrar formulario de profiling
-   *   - Con password temporal -> mostrar cambio obligatorio
-   *   - OK -> mostrar panel principal
-   */
   async function boot() {
     if (!SB.configOk) {
-      SBH.mostrar("msg", "Falta configurar config.js (URL y anon key de Supabase).", "error");
+      SBH.mostrar("msg", "Falta configurar config.js (URL y anon key de tu proyecto Supabase).", "error");
       return;
     }
     var gu = await SB.client.auth.getUser();
@@ -157,7 +181,6 @@
       return;
     }
 
-    // Si el usuario no tiene perfil, necesita completar registro
     if (!gp.data) {
       document.getElementById("profiling").classList.remove("hidden");
       SBH.llenarCasas(document.getElementById("prof-casa"));
@@ -167,7 +190,6 @@
     profile = gp.data;
     rol = profile.rol;
 
-    // Actualizar barra de usuario
     document.getElementById("user-nombre").textContent = profile.nombre;
     document.getElementById("user-casa").textContent = profile.numero_casa ? "Casa " + profile.numero_casa : "Sin casa";
     var rl = document.getElementById("user-rol");
@@ -178,7 +200,6 @@
     document.getElementById("welcome-tx").innerHTML =
       "¡Hola, " + SBH.esc(primer) + '! <span style="color:var(--sun-dark)">☀</span>';
 
-    // Verificar si debe cambiar contrasena por defecto
     if (requiereCambioPass(user, profile)) {
       document.getElementById("app-main").classList.add("hidden");
       document.getElementById("card-cambiar-pass").classList.remove("hidden");
@@ -186,22 +207,28 @@
       return;
     }
 
-    // Todo OK: mostrar panel principal
     document.getElementById("card-cambiar-pass").classList.add("hidden");
     document.getElementById("app-main").classList.remove("hidden");
 
-    // Poblar selects de categorias (una sola vez)
     llenarReclamoForm();
     llenarSugerenciaForm();
+    vincularNovedades();
 
     await definirNav();
+
+    // Novedades: contar contra el ultimo acceso conocido y luego marcarlo
+    vistoHasta = profile.ultimo_acceso || null;
+    await actualizarNovedades();
+    await SB.client.rpc("marcar_acceso");
+    vistoHasta = new Date().toISOString();
+
+    // Poll en vivo (cada 60 s) para detectar respuestas mientras la app está abierta
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(function () {
+      if (SB.configOk && document.visibilityState === "visible") actualizarNovedades();
+    }, 60000);
   }
 
-  /**
-   * Determina si el usuario necesita cambiar su contrasena.
-   * Caso 1: perfil tiene debe_cambiar_pass = true
-   * Caso 2: es una cuenta generica (admin/comite) sin flag de cambio
-   */
   function requiereCambioPass(u, p) {
     if (!u) return false;
     if (p && p.debe_cambiar_pass === true) return true;
@@ -212,131 +239,92 @@
   }
 
   /* ------------------------------------------------------------------ */
-  /*  Event listeners principales (DOMContentLoaded)                    */
+  /*  Novedades (campana)                                                */
   /* ------------------------------------------------------------------ */
 
-  document.addEventListener("DOMContentLoaded", function () {
-    if (!document.getElementById("app-main")) return;
+  function setBell(n) {
+    var el = document.getElementById("bell-count");
+    if (!el) return;
+    if (n > 0) {
+      el.textContent = n > 99 ? "99+" : String(n);
+      el.hidden = false;
+    } else {
+      el.hidden = true;
+    }
+  }
 
-    /* -- Cerrar sesion -- */
-    document.getElementById("btn-logout").addEventListener("click", async function () {
-      await SB.client.auth.signOut();
-      window.location.href = "index.html";
-    });
+  async function fetchNovedades() {
+    if (!vistoHasta) return { contador: 0, novedades: [] };
+    var res = await SB.client.rpc("mis_novedades", { p_desde: vistoHasta });
+    if (res.error) return { contador: 0, novedades: [] };
+    return { contador: res.data.contador || 0, novedades: res.data.novedades || [] };
+  }
 
-    /* -- Boton "Cambiar clave" en el topbar -- */
-    var btnCambiarPass = document.getElementById("btn-cambiar-pass");
-    if (btnCambiarPass) {
-      btnCambiarPass.addEventListener("click", function () {
-        document.getElementById("app-main").classList.add("hidden");
-        document.getElementById("card-cambiar-pass").classList.remove("hidden");
-        SBH.mostrar("msg", "Ingresa tu nueva contraseña a continuación.", "ok");
-      });
+  /** Actualiza el badge de la campana (sin tocar el baseline). */
+  async function actualizarNovedades() {
+    var d = await fetchNovedades();
+    novEdades = d.novedades || [];
+    setBell(d.contador);
+  }
+
+  /** Al abrir la lista de novedades: renderiza y marca todo como visto. */
+  async function abrirNovedades() {
+    var wrap = document.getElementById("novedades-list");
+    showLoading("novedades-list");
+
+    var d = await fetchNovedades();
+    var lista = d.novedades || [];
+
+    if (!lista.length) {
+      wrap.innerHTML = '<p class="hint">No tienes novedades. Te avisaremos cuando el comité responda o cambie el estado de tus reportes.</p>';
+    } else {
+      wrap.innerHTML = lista.map(tarjetaNovedad).join("");
+      hidratarFotos(wrap);
     }
 
-    /* -- Formulario de cambio de contrasena -- */
-    var formCambiarPass = document.getElementById("form-cambiar-pass");
-    if (formCambiarPass) {
-      formCambiarPass.addEventListener("submit", async function (e) {
-        e.preventDefault();
-        SBH.mostrar("msg", "", "ok");
-        var p1 = document.getElementById("pass-nueva").value;
-        var p2 = document.getElementById("pass-confirmar").value;
-        if (p1.length < 6) {
-          SBH.mostrar("msg", "La contraseña debe tener al menos 6 caracteres.", "error");
-          return;
-        }
-        if (p1 !== p2) {
-          SBH.mostrar("msg", "Las contraseñas no coinciden. Revisa e inténtalo de nuevo.", "error");
-          return;
-        }
+    // Marcar todo como visto
+    await SB.client.rpc("marcar_acceso");
+    vistoHasta = new Date().toISOString();
+    setBell(0);
+  }
 
-        var btn = document.getElementById("btn-save-pass");
-        btn.disabled = true;
-        btn.textContent = "Actualizando...";
+  function tarjetaNovedad(n) {
+    var resp = n.respuesta
+      ? '<div class="respuesta-box"><b>Respuesta del comité:</b> ' + SBH.esc(n.respuesta) + "</div>" : "";
+    var tipo = n.tipo === "reclamo" ? "Reporte" : "Sugerencia";
+    var estilos = n.tipo === "reclamo"
+      ? chip((SB.ESTADOS[n.estado] || n.estado), "estado-" + n.estado)
+      : chip({ nueva: "Nueva", en_revision: "En revisión", resuelta: "Resuelta" }[n.estado] || n.estado, "estado-" + ({ nueva: "nuevo", en_revision: "en_revision", resuelta: "resuelto" }[n.estado] || n.estado));
 
-        // Actualizar en Supabase Auth y marcar en el perfil
-        var up = await SB.client.auth.updateUser({
-          password: p1,
-          data: { clave_cambiada: true }
-        });
-        btn.disabled = false;
-        btn.textContent = "Actualizar contraseña";
+    return (
+      '<div class="reclamo novedad">' +
+        '<div class="head">' +
+          '<div>' +
+            '<div class="titulo">' + SBH.esc(n.titulo) + "</div>" +
+            '<div class="meta">' + tipo + " · " + SBH.fmtFecha(n.updated_at || n.created_at) + "</div>" +
+          "</div>" +
+          '<div>' + estilos + "</div>" +
+        "</div>" +
+        '<div class="desc">' + SBH.esc(n.descripcion) + "</div>" + resp + fotosHtml(n.fotos) +
+      "</div>"
+    );
+  }
 
-        if (up.error) {
-          SBH.mostrar("msg", SBH.fmtErr(up.error.message), "error");
-          return;
-        }
-
-        // Actualizar flags en la DB y en memoria local
-        await SB.client.rpc("marcar_clave_cambiada");
-        if (profile) profile.debe_cambiar_pass = false;
-        if (user) {
-          user.user_metadata = user.user_metadata || {};
-          user.user_metadata.clave_cambiada = true;
-        }
-
-        SBH.mostrar("msg", "¡Contraseña actualizada exitosamente!", "ok");
-        document.getElementById("card-cambiar-pass").classList.add("hidden");
-        document.getElementById("app-main").classList.remove("hidden");
-        boot();
-      });
+  function vincularNovedades() {
+    if (_novedadesBound) return;
+    _novedadesBound = true;
+    var bell = document.getElementById("btn-novedades");
+    if (bell) {
+      bell.addEventListener("click", function () { mostrarSeccion("sec-novedades"); });
     }
-
-    /* -- Formulario de profiling (completar registro) -- */
-    document.getElementById("profiling-form").addEventListener("submit", async function (e) {
-      e.preventDefault();
-      var nombre = document.getElementById("prof-name").value.trim();
-      var casa = parseInt(document.getElementById("prof-casa").value, 10);
-      var pr = await SB.client.rpc("registrar_perfil", { p_nombre: nombre, p_casa: casa, p_rol: "vecino" });
-      if (pr.error) { SBH.mostrar("msg", SBH.fmtErr(pr.error.message), "error"); return; }
-      boot();
-    });
-
-    /* -- Filtros de busqueda -- */
-    var fBuscarRec = document.getElementById("filtro-buscar-reclamo");
-    if (fBuscarRec) {
-      fBuscarRec.addEventListener("input", function () {
-        busquedaRec = fBuscarRec.value.trim().toLowerCase();
-        recPage = 1; // Reset pagina al buscar
-        rendReclamos();
-      });
-    }
-
-    var fBuscarSug = document.getElementById("filtro-buscar-sugerencia");
-    if (fBuscarSug) {
-      fBuscarSug.addEventListener("input", function () {
-        busquedaSug = fBuscarSug.value.trim().toLowerCase();
-        sugPage = 1; // Reset pagina al buscar
-        rendSugerencias();
-      });
-    }
-
-    /* -- Botones de exportar CSV -- */
-    var btnExpRec = document.getElementById("btn-exportar-reclamos");
-    if (btnExpRec) {
-      btnExpRec.addEventListener("click", function () { exportarCSVReclamos(); });
-    }
-
-    var btnExpSug = document.getElementById("btn-exportar-sugerencias");
-    if (btnExpSug) {
-      btnExpSug.addEventListener("click", function () { exportarCSVSugerencias(); });
-    }
-
-    boot();
-  });
+  }
 
   /* ================================================================== */
-  /*  VECINO: Nuevo reporte                                                */
+  /*  VECINO: Nuevo reporte                                              */
   /* ================================================================== */
 
-  /**
-   * Pobla el select de categorias del formulario de reporte.
-   * Los listeners se adjuntan UNA SOLA VEZ gracias al flag _reclamoBound (#4).
-   */
   function llenarReclamoForm() {
     var cat = document.getElementById("recl-categoria");
-    // Solo poblar si esta vacio
     if (cat && !cat.options.length) {
       Object.keys(SB.CATEGORIAS).forEach(function (k) {
         var o = document.createElement("option");
@@ -345,7 +333,8 @@
       });
     }
 
-    // #4: Solo adjuntar el listener una vez
+    vincularPicker("recl-fotos", "recl-fotos-preview", "recl-fotos-info", "fotosRecl");
+
     if (_reclamoBound) return;
     _reclamoBound = true;
 
@@ -362,6 +351,7 @@
         SBH.mostrar("msg", "La descripción del reporte debe tener al menos 10 y máximo 2000 caracteres.", "error");
         return;
       }
+
       var payload = {
         creado_por: user.id,
         numero_casa: profile.numero_casa,
@@ -369,10 +359,20 @@
         titulo: titulo,
         descripcion: descripcion
       };
+
+      if (fotosRecl.length) {
+        SBH.mostrar("msg", "Subiendo fotos...", "ok");
+        var paths = await subirFotos(fotosRecl);
+        if (!paths) return;
+        payload.fotos = paths;
+      }
+
       var ins = await SB.client.from("reclamos").insert([payload]);
       if (ins.error) { SBH.mostrar("msg", SBH.fmtErr(ins.error.message), "error"); return; }
       SBH.mostrar("msg", "Reporte enviado. El comité lo revisará.", "ok");
       e.target.reset();
+      fotosRecl = [];
+      limpiarPreview("recl-fotos-preview", "recl-fotos-info");
     });
   }
 
@@ -380,12 +380,9 @@
   /*  VECINO: Nueva sugerencia                                           */
   /* ================================================================== */
 
-  /**
-   * Vincula el formulario de sugerencias.
-   * Listener unico gracias al flag _sugerenciaBound (#4).
-   */
   function llenarSugerenciaForm() {
-    // #4: Solo adjuntar el listener una vez
+    vincularPicker("sug-fotos", "sug-fotos-preview", "sug-fotos-info", "fotosSug");
+
     if (_sugerenciaBound) return;
     _sugerenciaBound = true;
 
@@ -402,17 +399,133 @@
         SBH.mostrar("msg", "El detalle de la sugerencia debe tener al menos 10 y máximo 2000 caracteres.", "error");
         return;
       }
+
       var payload = {
         creado_por: user.id,
         numero_casa: profile.numero_casa,
         titulo: titulo,
         descripcion: descripcion
       };
+
+      if (fotosSug.length) {
+        SBH.mostrar("msg", "Subiendo fotos...", "ok");
+        var paths = await subirFotos(fotosSug);
+        if (!paths) return;
+        payload.fotos = paths;
+      }
+
       var ins = await SB.client.from("sugerencias").insert([payload]);
       if (ins.error) { SBH.mostrar("msg", SBH.fmtErr(ins.error.message), "error"); return; }
       SBH.mostrar("msg", "Sugerencia enviada. El comité la revisará.", "ok");
       e.target.reset();
+      fotosSug = [];
+      limpiarPreview("sug-fotos-preview", "sug-fotos-info");
     });
+  }
+
+  /* ================================================================== */
+  /*  FOTOS: picker, compresion y subida                                 */
+  /* ================================================================== */
+
+  /**
+   * Vincula un input file multiple: guarda los archivos en el estado,
+   * muestra miniaturas (clic para quitar) y limita a MAX_FOTOS.
+   */
+  function vincularPicker(inputId, previewId, infoId, stateKey) {
+    var input = document.getElementById(inputId);
+    if (!input) return;
+
+    input.addEventListener("change", function () {
+      var estado = (stateKey === "fotosRecl") ? fotosRecl : fotosSug;
+      var files = Array.prototype.slice.call(input.files || []);
+      var restantes = MAX_FOTOS - estado.length;
+      estado = estado.concat(files.slice(0, restantes));
+      if (stateKey === "fotosRecl") fotosRecl = estado; else fotosSug = estado;
+      renderFotosPreview(previewId, infoId, stateKey);
+      input.value = "";
+    });
+  }
+
+  /** Re-dibuja las miniaturas desde el estado actual (clic para quitar). */
+  function renderFotosPreview(previewId, infoId, stateKey) {
+    var preview = document.getElementById(previewId);
+    var info = document.getElementById(infoId);
+    if (!preview) return;
+    var estado = (stateKey === "fotosRecl") ? fotosRecl : fotosSug;
+    preview.innerHTML = "";
+    estado.forEach(function (f, idx) {
+      var img = document.createElement("img");
+      img.className = "foto-thumb";
+      img.dataset.idx = idx;
+      img.alt = "Vista previa";
+      img.src = URL.createObjectURL(f);
+      img.addEventListener("click", function () {
+        URL.revokeObjectURL(img.src);
+        var arr = (stateKey === "fotosRecl") ? fotosRecl : fotosSug;
+        arr.splice(parseInt(img.dataset.idx, 10), 1);
+        if (stateKey === "fotosRecl") fotosRecl = arr; else fotosSug = arr;
+        renderFotosPreview(previewId, infoId, stateKey);
+      });
+      preview.appendChild(img);
+    });
+    if (info) {
+      info.textContent = estado.length
+        ? estado.length + " de " + MAX_FOTOS + " fotos seleccionadas (clic para quitar)"
+        : "";
+    }
+  }
+
+  function limpiarPreview(previewId, infoId) {
+    var p = document.getElementById(previewId);
+    var i = document.getElementById(infoId);
+    if (p) p.innerHTML = "";
+    if (i) i.textContent = "";
+  }
+
+  /**
+   * Comprime una imagen a <= MAX_SIDE px y la devuelve como Blob JPEG.
+   */
+  function resizeImage(file, maxSide) {
+    return new Promise(function (resolve, reject) {
+      var img = new Image();
+      img.onload = function () {
+        var w = img.width, h = img.height;
+        var scale = Math.min(1, maxSide / Math.max(w, h));
+        var cw = Math.round(w * scale), ch = Math.round(h * scale);
+        var c = document.createElement("canvas");
+        c.width = cw; c.height = ch;
+        c.getContext("2d").drawImage(img, 0, 0, cw, ch);
+        c.toBlob(function (blob) {
+          if (blob) resolve(blob); else reject(new Error("No se pudo procesar la imagen."));
+        }, "image/jpeg", 0.82);
+      };
+      img.onerror = function () { reject(new Error("Imagen inválida.")); };
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
+  /**
+   * Sube todas las fotos al bucket privado "reportes/{user.id}/" y
+   * devuelve los paths (o null si algo falla).
+   */
+  async function subirFotos(files) {
+    var paths = [];
+    for (var i = 0; i < files.length; i++) {
+      try {
+        var blob = await resizeImage(files[i], 1280);
+        var path = user.id + "/" + uid() + ".jpg";
+        var up = await SB.client.storage.from("reportes").upload(path, blob, { contentType: "image/jpeg" });
+        if (up.error) {
+          SBH.mostrar("msg", "No se pudo subir una foto: " + SBH.fmtErr(up.error.message), "error");
+          return null;
+        }
+        paths.push(path);
+      } catch (ex) {
+        SBH.mostrar("msg", "No se pudo procesar una foto: " + ex.message, "error");
+        return null;
+      }
+    }
+    return paths;
   }
 
   /* ================================================================== */
@@ -429,6 +542,7 @@
     if (q.error) { wrap.innerHTML = '<p class="hint">' + SBH.esc(SBH.fmtErr(q.error.message)) + "</p>"; return; }
     if (!q.data.length) { wrap.innerHTML = '<p class="hint">Aún no has enviado sugerencias.</p>'; return; }
     wrap.innerHTML = q.data.map(tarjetaSugerenciaMia).join("");
+    hidratarFotos(wrap);
   }
 
   function tarjetaSugerenciaMia(s) {
@@ -441,9 +555,9 @@
             '<div class="titulo">' + SBH.esc(s.titulo) + "</div>" +
             '<div class="meta">' + SBH.fmtFecha(s.created_at) + "</div>" +
           "</div>" +
-          '<div>' + chip(SB.ESTADOS[{ nueva: "nuevo", en_revision: "en_revision", resuelta: "resuelto" }[s.estado]] || s.estado, "estado-" + ({ nueva: "nuevo", en_revision: "en_revision", resuelta: "resuelto" }[s.estado])) + "</div>" +
+          '<div>' + chip({ nueva: "Nueva", en_revision: "En revisión", resuelta: "Resuelta" }[s.estado] || s.estado, "estado-" + ({ nueva: "nuevo", en_revision: "en_revision", resuelta: "resuelto" }[s.estado] || s.estado)) + "</div>" +
         "</div>" +
-        '<div class="desc">' + SBH.esc(s.descripcion) + "</div>" + resp +
+        '<div class="desc">' + SBH.esc(s.descripcion) + "</div>" + resp + fotosHtml(s.fotos) +
       "</div>"
     );
   }
@@ -462,6 +576,7 @@
     if (q.error) { wrap.innerHTML = '<p class="hint">' + SBH.esc(SBH.fmtErr(q.error.message)) + "</p>"; return; }
     if (!q.data.length) { wrap.innerHTML = '<p class="hint">Aún no has enviado reportes.</p>'; return; }
     wrap.innerHTML = q.data.map(tarjetaReclamo).join("");
+    hidratarFotos(wrap);
   }
 
   function tarjetaReclamo(r) {
@@ -477,7 +592,7 @@
           "</div>" +
           '<div>' + chip(SB.ESTADOS[r.estado] || r.estado, "estado-" + r.estado) + "</div>" +
         "</div>" +
-        '<div class="desc">' + SBH.esc(r.descripcion) + "</div>" + resp +
+        '<div class="desc">' + SBH.esc(r.descripcion) + "</div>" + resp + fotosHtml(r.fotos) +
       "</div>"
     );
   }
@@ -496,10 +611,6 @@
     rendReclamos();
   }
 
-  /**
-   * Renderiza la lista paginada de reportes con filtros aplicados.
-   * Los botones de paginacion se renderizan inline despues de la lista.
-   */
   function rendReclamos() {
     var wrap = document.getElementById("reclamos-list");
     var lista = recCache.filter(function (r) {
@@ -516,7 +627,6 @@
       return;
     }
 
-    // #9: Paginacion
     var total = lista.length;
     var totalPages = Math.ceil(total / PAGE_SIZE);
     if (recPage > totalPages) recPage = totalPages;
@@ -526,11 +636,17 @@
     wrap.innerHTML = page.map(tarjetaComite).join("") + renderPagination(total, recPage, totalPages, "rec");
     bindResponder();
     bindPagination("rec", function (p) { recPage = p; rendReclamos(); });
+    hidratarFotos(wrap);
   }
 
   function tarjetaComite(r) {
     var resp = r.respuesta
       ? '<div class="respuesta-box"><b>Respuesta:</b> ' + SBH.esc(r.respuesta) + "</div>" : "";
+    var acciones =
+      '<div class="admin-acciones">' +
+        '<button class="btn ghost sm btn-archivar" type="button">🗄 Archivar</button>' +
+        (rol === "admin" ? '<button class="btn ghost sm danger btn-borrar" type="button">🗑 Borrar</button>' : "") +
+      "</div>";
     return (
       '<div class="reclamo" data-id="' + r.id + '">' +
         '<div class="head">' +
@@ -543,7 +659,7 @@
           '<div>' + chip(SB.ESTADOS[r.estado] || r.estado, "estado-" + r.estado) + "</div>" +
         "</div>" +
         '<div class="meta">Categoría: ' + SBH.esc(SBH.catLabel(r.categoria)) + "</div>" +
-        '<div class="desc">' + SBH.esc(r.descripcion) + "</div>" + resp +
+        '<div class="desc">' + SBH.esc(r.descripcion) + "</div>" + resp + fotosHtml(r.fotos) +
         '<form class="responder" style="margin-top:12px; display:grid; gap:8px;">' +
           '<div class="grid-2">' +
             '<label>Estado<select class="resp-estado">' +
@@ -555,11 +671,11 @@
           "</div>" +
           '<label>Respuesta<textarea class="resp-texto" rows="3">' + SBH.esc(r.respuesta || "") + "</textarea></label>" +
         "</form>" +
+        acciones +
       "</div>"
     );
   }
 
-  /** Vincula los formularios de respuesta de cada reclamo. */
   function bindResponder() {
     document.querySelectorAll("#reclamos-list .responder").forEach(function (f) {
       f.addEventListener("submit", async function (e) {
@@ -573,6 +689,32 @@
         });
         if (r.error) { SBH.mostrar("msg", SBH.fmtErr(r.error.message), "error"); return; }
         SBH.mostrar("msg", "Reporte actualizado.", "ok");
+        cargarReclamos();
+      });
+    });
+
+    document.querySelectorAll("#reclamos-list .btn-archivar").forEach(function (b) {
+      b.addEventListener("click", async function (e) {
+        e.preventDefault();
+        var card = b.closest(".reclamo");
+        var id = card.dataset.id;
+        if (!confirm("¿Archivar este reporte? Quedará oculto para todos.")) return;
+        var r = await SB.client.rpc("archivar_reclamo", { p_id: id, p_archivar: true });
+        if (r.error) { SBH.mostrar("msg", SBH.fmtErr(r.error.message), "error"); return; }
+        SBH.mostrar("msg", "Reporte archivado.", "ok");
+        cargarReclamos();
+      });
+    });
+
+    document.querySelectorAll("#reclamos-list .btn-borrar").forEach(function (b) {
+      b.addEventListener("click", async function (e) {
+        e.preventDefault();
+        var card = b.closest(".reclamo");
+        var id = card.dataset.id;
+        if (!confirm("⚠️ ¿BORRAR DEFINITIVAMENTE este reporte? Esta acción no se puede deshacer.")) return;
+        var r = await SB.client.rpc("borrar_reclamo", { p_id: id });
+        if (r.error) { SBH.mostrar("msg", SBH.fmtErr(r.error.message), "error"); return; }
+        SBH.mostrar("msg", "Reporte borrado.", "ok");
         cargarReclamos();
       });
     });
@@ -608,7 +750,6 @@
       return;
     }
 
-    // #9: Paginacion
     var total = lista.length;
     var totalPages = Math.ceil(total / PAGE_SIZE);
     if (sugPage > totalPages) sugPage = totalPages;
@@ -618,12 +759,18 @@
     wrap.innerHTML = page.map(tarjetaSugerencia).join("") + renderPagination(total, sugPage, totalPages, "sug");
     bindResponderSug();
     bindPagination("sug", function (p) { sugPage = p; rendSugerencias(); });
+    hidratarFotos(wrap);
   }
 
   function tarjetaSugerencia(s) {
     var resp = s.respuesta
       ? '<div class="respuesta-box"><b>Respuesta:</b> ' + SBH.esc(s.respuesta) + "</div>" : "";
     var map = { nueva: "nuevo", en_revision: "en_revision", resuelta: "resuelto" };
+    var acciones =
+      '<div class="admin-acciones">' +
+        '<button class="btn ghost sm btn-archivar" type="button">🗄 Archivar</button>' +
+        (rol === "admin" ? '<button class="btn ghost sm danger btn-borrar" type="button">🗑 Borrar</button>' : "") +
+      "</div>";
     return (
       '<div class="reclamo" data-id="' + s.id + '">' +
         '<div class="head">' +
@@ -635,7 +782,7 @@
           "</div>" +
           '<div>' + chip({ nueva: "Nueva", en_revision: "En revisión", resuelta: "Resuelta" }[s.estado] || s.estado, "estado-" + (map[s.estado] || s.estado)) + "</div>" +
         "</div>" +
-        '<div class="desc">' + SBH.esc(s.descripcion) + "</div>" + resp +
+        '<div class="desc">' + SBH.esc(s.descripcion) + "</div>" + resp + fotosHtml(s.fotos) +
         '<form class="responder" style="margin-top:12px; display:grid; gap:8px;">' +
           '<div class="grid-2">' +
             '<label>Estado<select class="resp-estado">' +
@@ -647,6 +794,7 @@
           "</div>" +
           '<label>Respuesta<textarea class="resp-texto" rows="3">' + SBH.esc(s.respuesta || "") + "</textarea></label>" +
         "</form>" +
+        acciones +
       "</div>"
     );
   }
@@ -667,20 +815,38 @@
         cargarSugerencias();
       });
     });
+
+    document.querySelectorAll("#sugerencias-list .btn-archivar").forEach(function (b) {
+      b.addEventListener("click", async function (e) {
+        e.preventDefault();
+        var card = b.closest(".reclamo");
+        var id = card.dataset.id;
+        if (!confirm("¿Archivar esta sugerencia? Quedará oculta para todos.")) return;
+        var r = await SB.client.rpc("archivar_sugerencia", { p_id: id, p_archivar: true });
+        if (r.error) { SBH.mostrar("msg", SBH.fmtErr(r.error.message), "error"); return; }
+        SBH.mostrar("msg", "Sugerencia archivada.", "ok");
+        cargarSugerencias();
+      });
+    });
+
+    document.querySelectorAll("#sugerencias-list .btn-borrar").forEach(function (b) {
+      b.addEventListener("click", async function (e) {
+        e.preventDefault();
+        var card = b.closest(".reclamo");
+        var id = card.dataset.id;
+        if (!confirm("⚠️ ¿BORRAR DEFINITIVAMENTE esta sugerencia? Esta acción no se puede deshacer.")) return;
+        var r = await SB.client.rpc("borrar_sugerencia", { p_id: id });
+        if (r.error) { SBH.mostrar("msg", SBH.fmtErr(r.error.message), "error"); return; }
+        SBH.mostrar("msg", "Sugerencia borrada.", "ok");
+        cargarSugerencias();
+      });
+    });
   }
 
   /* ================================================================== */
-  /*  Paginacion (#9)                                                    */
+  /*  Paginacion                                                         */
   /* ================================================================== */
 
-  /**
-   * Genera HTML de botones de paginacion (Anterior / Siguiente + indicador).
-   * @param {number} total - Total de registros
-   * @param {number} current - Pagina actual (1-based)
-   * @param {number} totalPages - Total de paginas
-   * @param {string} prefix - Prefijo para IDs unicos ("rec" o "sug")
-   * @returns {string} HTML de la paginacion
-   */
   function renderPagination(total, current, totalPages, prefix) {
     if (totalPages <= 1) return "";
     return (
@@ -695,7 +861,6 @@
     );
   }
 
-  /** Vincula los botones de paginacion para una lista. */
   function bindPagination(prefix, onPageChange) {
     var prev = document.getElementById(prefix + "-prev");
     var next = document.getElementById(prefix + "-next");
@@ -713,27 +878,16 @@
   /*  Exportar CSV                                                       */
   /* ================================================================== */
 
-  /**
-   * Genera un archivo CSV y lo descarga en el navegador.
-   * Usa BOM UTF-8 (\uFEFF) para compatibilidad con Excel en Windows.
-   * @param {Array} datos - Array de objetos
-   * @param {string} nombreArchivo - Nombre del archivo a descargar
-   * @param {Array} columnas - Definicion de columnas [{ label, val }]
-   */
   function exportarCSV(datos, nombreArchivo, columnas) {
     if (!datos || !datos.length) {
       SBH.mostrar("msg", "No hay datos para exportar.", "error");
       return;
     }
-    var headers = columnas.map(function (c) { return '"' + String(c.label).replace(/"/g, '""') + '"'; }).join(",");
-    var rows = datos.map(function (row) {
-      return columnas.map(function (c) {
-        var val = c.val(row);
-        val = (val == null) ? "" : String(val);
-        return '"' + val.replace(/"/g, '""') + '"';
-      }).join(",");
-    });
-    var csvContent = "\uFEFF" + [headers].concat(rows).join("\n");
+    var contenido = (window.PURE && window.PURE.construirCSV)
+      ? window.PURE.construirCSV(datos, columnas)
+      : "";
+    if (!contenido) { SBH.mostrar("msg", "No hay datos para exportar.", "error"); return; }
+    var csvContent = "\uFEFF" + contenido;
     var blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     var url = URL.createObjectURL(blob);
     var a = document.createElement("a");
@@ -753,6 +907,7 @@
       { label: "Categoría", val: function (r) { return SBH.catLabel(r.categoria); } },
       { label: "Estado", val: function (r) { return SB.ESTADOS[r.estado] || r.estado; } },
       { label: "Descripción", val: function (r) { return r.descripcion; } },
+      { label: "Fotos", val: function (r) { return (r.fotos || []).length; } },
       { label: "Respuesta Comité", val: function (r) { return r.respuesta || ""; } },
       { label: "Atendido por", val: function (r) { return r.atendido_nombre || ""; } },
       { label: "Fecha creación", val: function (r) { return SBH.fmtFecha(r.created_at); } }
@@ -767,6 +922,7 @@
       { label: "Título", val: function (s) { return s.titulo; } },
       { label: "Estado", val: function (s) { return { nueva: "Nueva", en_revision: "En revisión", resuelta: "Resuelta" }[s.estado] || s.estado; } },
       { label: "Detalle", val: function (s) { return s.descripcion; } },
+      { label: "Fotos", val: function (s) { return (s.fotos || []).length; } },
       { label: "Respuesta Comité", val: function (s) { return s.respuesta || ""; } },
       { label: "Atendido por", val: function (s) { return s.atendido_nombre || ""; } },
       { label: "Fecha creación", val: function (s) { return SBH.fmtFecha(s.created_at); } }
@@ -778,18 +934,13 @@
   /*  Estadisticas                                                       */
   /* ================================================================== */
 
-  /**
-   * Carga y renderiza las estadisticas comunitarias.
-   * Llama a la funcion RPC 'estadisticas' que retorna JSONB con
-   * conteos agregados (total, por estado, categoria, mes).
-   * Los graficos se dibujan via SBStats.drawBars() (Canvas puro).
-   */
   async function cargarStats() {
     var s = await SB.client.rpc("estadisticas");
     if (s.error) { SBH.mostrar("msg", SBH.fmtErr(s.error.message), "error"); return; }
     var e = s.data || {};
+    var pure = window.PURE || {};
+    var fmtMes = pure.fmtMes || SBStats.fmtMes;
 
-    // Tarjetas resumen de reclamos
     var grid = document.getElementById("stats-grid");
     grid.innerHTML =
       statCard(e.total || 0, "Reportes totales") +
@@ -797,7 +948,6 @@
       statCard(e.por_estado && e.por_estado.en_revision || 0, "En revisión") +
       statCard(e.por_estado && e.por_estado.resuelto || 0, "Resueltos");
 
-    // Graficos de barras de reportes
     SBStats.drawBars(
       document.getElementById("chart-estado"),
       Object.keys(e.por_estado || {}).map(function (k) { return SB.ESTADOS[k] || k; }),
@@ -808,11 +958,10 @@
       Object.keys(e.por_categoria || {}).map(function (k) { return SBH.catLabel(k); }),
       Object.values(e.por_categoria || {})
     );
-    var meses = (e.por_mes || []).map(function (m) { return SBStats.fmtMes(m.mes); });
+    var meses = (e.por_mes || []).map(function (m) { return fmtMes(m.mes); });
     var cant = (e.por_mes || []).map(function (m) { return m.cantidad; });
     SBStats.drawBars(document.getElementById("chart-mes"), meses, cant);
 
-    // Tarjetas resumen de sugerencias
     var gridSug = document.getElementById("stats-grid-sug");
     gridSug.innerHTML =
       statCard(e.sug_total || 0, "Sugerencias totales") +
@@ -820,7 +969,6 @@
       statCard(e.sug_por_estado && e.sug_por_estado.en_revision || 0, "En revisión") +
       statCard(e.sug_por_estado && e.sug_por_estado.resuelta || 0, "Resueltas");
 
-    // Graficos de barras de sugerencias
     SBStats.drawBars(
       document.getElementById("chart-sug-estado"),
       Object.keys(e.sug_por_estado || {}).map(function (k) {
@@ -828,7 +976,7 @@
       }),
       Object.values(e.sug_por_estado || {})
     );
-    var sugMes = (e.sug_por_mes || []).map(function (m) { return SBStats.fmtMes(m.mes); });
+    var sugMes = (e.sug_por_mes || []).map(function (m) { return fmtMes(m.mes); });
     var sugCant = (e.sug_por_mes || []).map(function (m) { return m.cantidad; });
     SBStats.drawBars(document.getElementById("chart-sug-mes"), sugMes, sugCant);
   }
@@ -841,10 +989,6 @@
   /*  Admin: Gestion de usuarios                                         */
   /* ================================================================== */
 
-  /**
-   * Lista todos los usuarios y permite al admin cambiar roles.
-   * #6: Se agrega confirmacion antes de aplicar cambios de rol.
-   */
   async function cargarUsuarios() {
     showLoading("usuarios-list");
     var wrap = document.getElementById("usuarios-list");
@@ -869,7 +1013,6 @@
       );
     }).join("");
 
-    // #6: Vincular botones con confirmacion
     wrap.querySelectorAll(".user-row").forEach(function (row) {
       row.querySelector(".ubtn").addEventListener("click", async function () {
         var id = row.dataset.id;
@@ -878,7 +1021,6 @@
         var rolActual = row.querySelector(".dt").textContent.split(" · ").pop();
         var nuevoRolLabel = rolLabels[nuevoRol] || nuevoRol;
 
-        // #6: Confirmar antes de cambiar rol
         if (!confirm("¿Estás seguro de cambiar el rol de \"" + nombreUsuario + "\" de " + rolActual + " a " + nuevoRolLabel + "?")) {
           return;
         }
@@ -890,4 +1032,107 @@
       });
     });
   }
+
+  /* ================================================================== */
+  /*  Event listeners principales (DOMContentLoaded)                    */
+  /* ================================================================== */
+
+  document.addEventListener("DOMContentLoaded", function () {
+    if (!document.getElementById("app-main")) return;
+
+    document.getElementById("btn-logout").addEventListener("click", async function () {
+      await SB.client.auth.signOut();
+      window.location.href = "index.html";
+    });
+
+    var btnCambiarPass = document.getElementById("btn-cambiar-pass");
+    if (btnCambiarPass) {
+      btnCambiarPass.addEventListener("click", function () {
+        document.getElementById("app-main").classList.add("hidden");
+        document.getElementById("card-cambiar-pass").classList.remove("hidden");
+        SBH.mostrar("msg", "Ingresa tu nueva contraseña a continuación.", "ok");
+      });
+    }
+
+    var formCambiarPass = document.getElementById("form-cambiar-pass");
+    if (formCambiarPass) {
+      formCambiarPass.addEventListener("submit", async function (e) {
+        e.preventDefault();
+        SBH.mostrar("msg", "", "ok");
+        var p1 = document.getElementById("pass-nueva").value;
+        var p2 = document.getElementById("pass-confirmar").value;
+        if (p1.length < 6) {
+          SBH.mostrar("msg", "La contraseña debe tener al menos 6 caracteres.", "error");
+          return;
+        }
+        if (p1 !== p2) {
+          SBH.mostrar("msg", "Las contraseñas no coinciden. Revisa e inténtalo de nuevo.", "error");
+          return;
+        }
+
+        var btn = document.getElementById("btn-save-pass");
+        btn.disabled = true;
+        btn.textContent = "Actualizando...";
+
+        var up = await SB.client.auth.updateUser({
+          password: p1,
+          data: { clave_cambiada: true }
+        });
+        btn.disabled = false;
+        btn.textContent = "Actualizar contraseña";
+
+        if (up.error) {
+          SBH.mostrar("msg", SBH.fmtErr(up.error.message), "error");
+          return;
+        }
+
+        await SB.client.rpc("marcar_clave_cambiada");
+        if (profile) profile.debe_cambiar_pass = false;
+        if (user) {
+          user.user_metadata = user.user_metadata || {};
+          user.user_metadata.clave_cambiada = true;
+        }
+
+        SBH.mostrar("msg", "¡Contraseña actualizada exitosamente!", "ok");
+        document.getElementById("card-cambiar-pass").classList.add("hidden");
+        document.getElementById("app-main").classList.remove("hidden");
+        boot();
+      });
+    }
+
+    document.getElementById("profiling-form").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      var nombre = document.getElementById("prof-name").value.trim();
+      var casa = parseInt(document.getElementById("prof-casa").value, 10);
+      var pr = await SB.client.rpc("registrar_perfil", { p_nombre: nombre, p_casa: casa, p_rol: "vecino" });
+      if (pr.error) { SBH.mostrar("msg", SBH.fmtErr(pr.error.message), "error"); return; }
+      boot();
+    });
+
+    var fBuscarRec = document.getElementById("filtro-buscar-reclamo");
+    if (fBuscarRec) {
+      fBuscarRec.addEventListener("input", function () {
+        busquedaRec = fBuscarRec.value.trim().toLowerCase();
+        recPage = 1;
+        rendReclamos();
+      });
+    }
+
+    var fBuscarSug = document.getElementById("filtro-buscar-sugerencia");
+    if (fBuscarSug) {
+      fBuscarSug.addEventListener("input", function () {
+        busquedaSug = fBuscarSug.value.trim().toLowerCase();
+        sugPage = 1;
+        rendSugerencias();
+      });
+    }
+
+    var btnExpRec = document.getElementById("btn-exportar-reclamos");
+    if (btnExpRec) btnExpRec.addEventListener("click", function () { exportarCSVReclamos(); });
+
+    var btnExpSug = document.getElementById("btn-exportar-sugerencias");
+    if (btnExpSug) btnExpSug.addEventListener("click", function () { exportarCSVSugerencias(); });
+
+    boot();
+  });
 })();
