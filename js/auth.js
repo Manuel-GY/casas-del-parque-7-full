@@ -80,6 +80,9 @@
   function mostrar(elId, text, tipo) {
     var m = document.getElementById(elId);
     if (!m) return;
+    if (m.parentNode && m.parentNode !== document.body) {
+      document.body.appendChild(m);
+    }
     m.textContent = text || "";
     m.className = "msg " + (tipo || "error");
     if (m._toastTimer) clearTimeout(m._toastTimer);
