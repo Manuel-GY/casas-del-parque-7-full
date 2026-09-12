@@ -310,8 +310,18 @@
           return;
         }
         if (event === "SIGNED_IN") {
-          // Llegada desde el correo de confirmación (solo si no es recovery)
-          if (/type=recovery/i.test(window.location.hash || "")) return;
+          // Solo cuando volvemos de confirmar un correo hay un registro
+          // pendiente guardado; ahi completamos casa+perfil y entramos.
+          // En el registro normal (sin correo) el formulario ya crea el
+          // perfil antes de redirigir, asi que no hacemos nada aqui.
+          var raw = null;
+          try { raw = localStorage.getItem("cdp7_registro"); } catch (e) {}
+          if (!raw) return;
+          var pend = null;
+          try { pend = JSON.parse(raw); } catch (e) { return; }
+          var ses = SB.client.auth.getSession();
+          var usr = ses && ses.data && ses.data.session ? ses.data.session.user : null;
+          if (!usr || !pend.email || pend.email !== usr.email) return;
           completarRegistroPendiente().then(function () {
             window.location.href = "app.html";
           });
