@@ -9,7 +9,7 @@
  */
 "use strict";
 
-var VERSION = "cdp7-v2.0.22";
+var VERSION = "cdp7-v2.0.23";
 
 var APP_SHELL = [
   "./",
@@ -85,7 +85,25 @@ self.addEventListener("fetch", function (event) {
     return;
   }
 
-  // Assets: cache-first, actualización en segundo plano
+  // JS, CSS y HTML: network-first con respaldo a caché (código fresco garantizado al actualizar)
+  if (url.pathname.endsWith(".js") || url.pathname.endsWith(".css") || url.pathname.endsWith(".html")) {
+    event.respondWith(
+      fetch(req)
+        .then(function (res) {
+          if (res && res.ok && url.origin === location.origin) {
+            var copy = res.clone();
+            caches.open(VERSION).then(function (c) { c.put(req, copy); });
+          }
+          return res;
+        })
+        .catch(function () {
+          return caches.match(req);
+        })
+    );
+    return;
+  }
+
+  // Assets restantes (imágenes/fuentes): cache-first, actualización en segundo plano
   event.respondWith(
     caches.match(req).then(function (cached) {
       var network = fetch(req).then(function (res) {
