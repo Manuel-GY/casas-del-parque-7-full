@@ -285,16 +285,16 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--l
 }
 
 /* ==================================================================
- * Banner Ejecutivo de Administración (Comité / Admin)
+ * Banner Ejecutivo de Administración (Comité / Admin) - Edición Compacta
  * ================================================================== */
 .admin-hero-banner {
   background: linear-gradient(135deg, #14532d 0%, #166534 50%, #0f3c21 100%);
   color: #fff;
-  border-radius: 24px;
-  padding: 24px 26px;
-  box-shadow: 0 16px 36px rgba(20, 83, 45, 0.22);
-  margin-top: 14px;
-  margin-bottom: 22px;
+  border-radius: 18px;
+  padding: 16px 20px;
+  box-shadow: 0 12px 28px rgba(20, 83, 45, 0.2);
+  margin-top: 10px;
+  margin-bottom: 16px;
   position: relative;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.15);
@@ -304,10 +304,10 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--l
 .admin-hero-banner::before {
   content: "";
   position: absolute;
-  top: -40px; right: -40px;
-  width: 180px; height: 180px;
+  top: -30px; right: -30px;
+  width: 140px; height: 140px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(251, 191, 36, 0.25) 0%, rgba(251, 191, 36, 0) 70%);
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.22) 0%, rgba(251, 191, 36, 0) 70%);
   pointer-events: none;
 }
 
@@ -315,15 +315,15 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--l
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   flex-wrap: wrap;
-  padding-bottom: 16px;
+  padding-bottom: 10px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .admin-hero-title h3 {
   margin: 0;
-  font-size: 20px;
+  font-size: 17px;
   font-family: "Baloo 2", sans-serif;
   color: #fff;
   letter-spacing: 0.2px;
@@ -333,20 +333,20 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--l
   background: rgba(251, 191, 36, 0.2);
   color: #fbbf24;
   border: 1px solid rgba(251, 191, 36, 0.4);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
-  padding: 3px 10px;
+  padding: 2px 8px;
   border-radius: 20px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   display: inline-block;
-  margin-left: 8px;
+  margin-left: 6px;
 }
 
 .admin-hero-sub {
-  font-size: 13px;
+  font-size: 12px;
   color: #dcfce7;
-  margin-top: 4px;
+  margin-top: 2px;
   font-weight: 600;
 }
 
@@ -354,30 +354,30 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--l
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 16px;
-  padding: 10px 16px;
-  min-width: 210px;
+  border-radius: 12px;
+  padding: 6px 12px;
+  min-width: 170px;
 }
 
 .admin-resolution-info {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   color: #f0fdf4;
 }
 
 .admin-resolution-info .pct {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 800;
   color: #4ade80;
   font-family: "Baloo 2", sans-serif;
 }
 
 .admin-progress-track {
-  height: 8px;
+  height: 6px;
   background: rgba(255, 255, 255, 0.2);
   border-radius: 999px;
   overflow: hidden;
@@ -392,24 +392,24 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--l
 
 .admin-kpi-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 12px;
-  margin-top: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+  margin-top: 10px;
 }
 
 .admin-kpi-card {
   background: rgba(255, 255, 255, 0.09);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 16px;
-  padding: 14px 16px;
+  border-radius: 12px;
+  padding: 10px 12px;
   transition: all 0.2s ease;
   position: relative;
 }
 
 .admin-kpi-card:hover {
   background: rgba(255, 255, 255, 0.15);
-  transform: translateY(-2px);
+  transform: translateY(-1px);
   border-color: rgba(255, 255, 255, 0.3);
 }
 
@@ -426,13 +426,13 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--l
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .admin-kpi-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 10px;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -446,7 +446,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--l
 .admin-kpi-icon.icon-community { background: rgba(245, 158, 11, 0.3); color: #fde047; }
 
 .admin-kpi-num {
-  font-size: 26px;
+  font-size: 22px;
   font-weight: 800;
   font-family: "Baloo 2", sans-serif;
   line-height: 1;
@@ -454,22 +454,22 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--l
 }
 
 .admin-kpi-lbl {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   color: #e2e8f0;
 }
 
 .admin-kpi-sub {
-  font-size: 11px;
+  font-size: 10px;
   color: #cbd5e1;
-  margin-top: 3px;
+  margin-top: 2px;
   font-weight: 600;
 }
 
 .admin-kpi-pill {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 800;
-  padding: 2px 8px;
+  padding: 1px 7px;
   border-radius: 999px;
   text-transform: uppercase;
 }
@@ -477,7 +477,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--l
 .admin-kpi-pill.urgent {
   background: #ef4444;
   color: #fff;
-  box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
   animation: pulse-urgent 2s infinite;
 }
 

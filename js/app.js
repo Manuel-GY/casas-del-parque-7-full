@@ -289,7 +289,7 @@
           '<div class="admin-kpi-card' + (nuevosRec > 0 ? ' alert-nuevos' : '') + '">' +
             '<div class="admin-kpi-top">' +
               '<div class="admin-kpi-icon icon-alert">' +
-                '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>' +
+                '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>' +
               '</div>' +
               (nuevosRec > 0 ? '<span class="admin-kpi-pill urgent">Revisar</span>' : '<span class="admin-kpi-pill ok">Al día</span>') +
             '</div>' +
@@ -301,7 +301,7 @@
           '<div class="admin-kpi-card">' +
             '<div class="admin-kpi-top">' +
               '<div class="admin-kpi-icon icon-process">' +
-                '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>' +
+                '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>' +
               '</div>' +
             '</div>' +
             '<div class="admin-kpi-num">' + procesoRec + '</div>' +
@@ -312,7 +312,7 @@
           '<div class="admin-kpi-card">' +
             '<div class="admin-kpi-top">' +
               '<div class="admin-kpi-icon icon-success">' +
-                '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>' +
+                '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>' +
               '</div>' +
             '</div>' +
             '<div class="admin-kpi-num">' + resueltosRec + '</div>' +
@@ -323,7 +323,7 @@
           '<div class="admin-kpi-card">' +
             '<div class="admin-kpi-top">' +
               '<div class="admin-kpi-icon icon-community">' +
-                '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>' +
+                '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>' +
               '</div>' +
             '</div>' +
             '<div class="admin-kpi-num">' + nuevasSug + '</div>' +
@@ -334,10 +334,10 @@
           '<div class="admin-kpi-card">' +
             '<div class="admin-kpi-top">' +
               '<div class="admin-kpi-icon icon-community">' +
-                '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>' +
+                '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>' +
               '</div>' +
             '</div>' +
-            '<div class="admin-kpi-num">' + (e.casas_ocupadas || 0) + ' <span style="font-size:16px;font-weight:600;">/ 146</span></div>' +
+            '<div class="admin-kpi-num">' + (e.casas_ocupadas || 0) + ' <span style="font-size:14px;font-weight:600;">/ 146</span></div>' +
             '<div class="admin-kpi-lbl">Casas habitadas</div>' +
             '<div class="admin-kpi-sub">' + (e.vecinos || 0) + ' vecinos · ' + (e.casas_llenas || 0) + ' llenas</div>' +
           '</div>' +
