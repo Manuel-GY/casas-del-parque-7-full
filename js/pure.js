@@ -65,6 +65,8 @@
       return "No hay conexión con Supabase. Revisa tu internet e inténtalo de nuevo.";
     if (/already registered|already been registered|email already/i.test(s))
       return "Ese correo ya está registrado. Prueba iniciando sesión.";
+    if (/email not confirmed|email not verified/i.test(s))
+      return "Correo no confirmado. Revisa tu correo y haz clic en el enlace de confirmación para activar tu cuenta.";
     if (/invalid login credentials|invalid email or password/i.test(s))
       return "Correo o contraseña incorrectos.";
     if (/Demasiados intentos/i.test(s))

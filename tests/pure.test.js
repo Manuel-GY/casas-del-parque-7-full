@@ -39,6 +39,7 @@ test("fmtMes formatea YYYY-MM a 'ene 24'", () => {
 
 test("fmtErr traduce errores conocidos y devuelve otros tal cual", () => {
   assert.match(PURE.fmtErr("Could not find the function..."), /base de datos/i);
+  assert.match(PURE.fmtErr("Email not confirmed"), /Correo no confirmado/i);
   assert.equal(PURE.fmtErr("texto sin patrón"), "texto sin patrón");
   assert.equal(PURE.fmtErr(null), "");
 });
