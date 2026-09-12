@@ -616,6 +616,7 @@
       e.target.reset();
       fotosRecl = [];
       limpiarPreview("recl-fotos-preview", "recl-fotos-info");
+      cargarResumen();
     });
   }
 
@@ -663,6 +664,7 @@
       e.target.reset();
       fotosSug = [];
       limpiarPreview("sug-fotos-preview", "sug-fotos-info");
+      cargarResumen();
     });
   }
 
@@ -966,6 +968,7 @@
         if (r.error) { SBH.mostrar("msg", SBH.fmtErr(r.error.message), "error"); return; }
         SBH.mostrar("msg", "Reporte actualizado.", "ok");
         cargarReclamos();
+        cargarResumen();
       });
     });
 
@@ -979,6 +982,7 @@
         if (r.error) { SBH.mostrar("msg", SBH.fmtErr(r.error.message), "error"); return; }
         SBH.mostrar("msg", "Reporte archivado.", "ok");
         cargarReclamos();
+        cargarResumen();
       });
     });
 
@@ -992,6 +996,7 @@
         if (r.error) { SBH.mostrar("msg", SBH.fmtErr(r.error.message), "error"); return; }
         SBH.mostrar("msg", "Reporte borrado.", "ok");
         cargarReclamos();
+        cargarResumen();
       });
     });
   }
@@ -1093,6 +1098,7 @@
         if (r.error) { SBH.mostrar("msg", SBH.fmtErr(r.error.message), "error"); return; }
         SBH.mostrar("msg", "Sugerencia actualizada.", "ok");
         cargarSugerencias();
+        cargarResumen();
       });
     });
 
@@ -1106,6 +1112,7 @@
         if (r.error) { SBH.mostrar("msg", SBH.fmtErr(r.error.message), "error"); return; }
         SBH.mostrar("msg", "Sugerencia archivada.", "ok");
         cargarSugerencias();
+        cargarResumen();
       });
     });
 
@@ -1119,6 +1126,7 @@
         if (r.error) { SBH.mostrar("msg", SBH.fmtErr(r.error.message), "error"); return; }
         SBH.mostrar("msg", "Sugerencia borrada.", "ok");
         cargarSugerencias();
+        cargarResumen();
       });
     });
   }
