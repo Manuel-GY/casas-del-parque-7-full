@@ -210,7 +210,7 @@
     banner.classList.remove("cargando");
     if (qr.error || qg.error) {
       var msje = SBH.esc(SBH.fmtErr((qr.error || qg.error).message));
-      qs.forEach(function (grp) { grp.forEach(function (id) { var el = document.getElementById(id); if (el) el.textContent = "·"; }); });
+      qs.forEach(function (grp) { grp.forEach(function (id) { var el = document.querySelector("[data-rb=\"" + id + "\"]"); if (el) el.textContent = "·"; }); });
       return;
     }
     var rec = { nuevo: 0, en_revision: 0, resuelto: 0 };
@@ -231,7 +231,7 @@
       "sug-nueva": sug.nueva, "sug-proceso": sug.en_revision, "sug-cerrada": sug.resuelta
     };
     Object.keys(valores).forEach(function (k) {
-      var el = document.getElementById(k);
+      var el = document.querySelector("[data-rb=\"" + k + "\"]");
       if (el) el.textContent = textos[k](valores[k] || 0);
     });
   }
