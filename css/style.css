@@ -184,6 +184,24 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--l
 }
 
 .hint { font-size: 12px; color: var(--muted); margin: 0; font-weight: 600; }
+.char-counter {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  text-align: right;
+  margin-top: 4px;
+  display: block;
+  transition: color 0.2s ease;
+}
+.char-counter.warn { color: #d97706; }
+.char-counter.ok { color: #16a34a; }
+.privacy-note {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 8px;
+  margin-bottom: 0;
+  font-weight: 600;
+}
 .cupo-badge {
   display: inline-block;
   margin-top: 6px;

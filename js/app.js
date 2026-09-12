@@ -1548,7 +1548,7 @@
       if (!inp || !cnt) return;
       function update() {
         var len = inp.value.length;
-        cnt.textContent = len + " / " + maxLen + (minLen ? " (mínimo " + minLen + ")" : "");
+        cnt.textContent = len + " / " + maxLen + (minLen ? " (mínimo " + minLen + " caracteres)" : "");
         cnt.classList.toggle("ok", minLen ? len >= minLen : len > 0);
         cnt.classList.toggle("warn", minLen ? (len > 0 && len < minLen) : false);
       }
