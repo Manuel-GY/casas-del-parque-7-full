@@ -9,7 +9,7 @@
  */
 "use strict";
 
-var VERSION = "cdp7-v2.0.0";
+var VERSION = "cdp7-v2.0.1";
 
 var APP_SHELL = [
   "./",
@@ -63,17 +63,22 @@ self.addEventListener("fetch", function (event) {
   var url = new URL(req.url);
   var path = url.pathname.replace(location.pathname.replace(/[^/]*$/, ""), "");
 
-  // Navegaciones: red primero, con respaldo al shell cacheado (offline)
+  // Navegaciones: red primero, con respaldo al shell cacheado (offline).
+  // Se cachea bajo la ruta navegada para no confundir index.html y app.html.
   if (req.mode === "navigate") {
     event.respondWith(
       fetch(req)
         .then(function (res) {
           var copy = res.clone();
-          caches.open(VERSION).then(function (c) { c.put("./index.html", copy); });
+          caches.open(VERSION).then(function (c) { c.put(req, copy); });
           return res;
         })
         .catch(function () {
-          return caches.match("./index.html");
+          var navKey = url.pathname.endsWith("/app.html") ? "./app.html" : "./index.html";
+          return caches.match(navKey).then(function (hit) {
+            if (hit) return hit;
+            return caches.match("./index.html");
+          });
         })
     );
     return;
