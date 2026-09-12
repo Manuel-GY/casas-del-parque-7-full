@@ -112,6 +112,27 @@
     }
   }
 
+  /**
+   * Borra del Storage las fotos adjuntas a la tarjeta (al marcarla resuelta).
+   * Devuelve true si procede (sin fotos, o borradas); false si se cancela o falla.
+   */
+  function borrarFotosDeTarjeta(card) {
+    var paths = [];
+    var imgs = card.querySelectorAll(".foto-thumb");
+    for (var i = 0; i < imgs.length; i++) {
+      var p = imgs[i].getAttribute("data-foto");
+      if (p) paths.push(p);
+    }
+    if (!paths.length) return Promise.resolve(true);
+    if (!confirm("Al marcarlo como resuelto se eliminará la foto adjunta. ¿Continuar?")) {
+      return Promise.resolve(false);
+    }
+    return SB.client.storage.from("reportes").remove(paths).then(function (r) {
+      if (r.error) { SBH.mostrar("msg", SBH.fmtErr(r.error.message), "error"); return false; }
+      return true;
+    });
+  }
+
   /* ------------------------------------------------------------------ */
   /*  Sesion / perfil                                                    */
   /* ------------------------------------------------------------------ */
@@ -684,6 +705,10 @@
         var id = card.dataset.id;
         var estado = f.querySelector(".resp-estado").value;
         var texto = f.querySelector(".resp-texto").value.trim();
+        if (estado === "resuelto") {
+          var ok = await borrarFotosDeTarjeta(card);
+          if (!ok) return;
+        }
         var r = await SB.client.rpc("responder_reclamo", {
           p_id: id, p_estado: estado, p_respuesta: texto || null
         });
@@ -807,6 +832,10 @@
         var id = card.dataset.id;
         var estado = f.querySelector(".resp-estado").value;
         var texto = f.querySelector(".resp-texto").value.trim();
+        if (estado === "resuelta") {
+          var ok = await borrarFotosDeTarjeta(card);
+          if (!ok) return;
+        }
         var r = await SB.client.rpc("responder_sugerencia", {
           p_id: id, p_estado: estado, p_respuesta: texto || null
         });

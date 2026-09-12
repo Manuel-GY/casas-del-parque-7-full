@@ -62,6 +62,7 @@ Plataforma web (**Serverless & Zero-Build**) desplegada en **Vercel** con backen
 - **Registro protegido**: trigger sobre `auth.users` que limita a **10 intentos de registro por hora por correo** (tabla `intentos_registro`).
 - **Cupo atómico**: la función `registrar_perfil` reserva una de las 2 plazas por casa con un bloqueo de asesoría de PostgreSQL, evitando dobles asignaciones bajo concurrencia.
 - **Adjuntos privados**: las fotos viven en el bucket `reportes` (acceso `private`), solo los autores y `admin`/`comite` pueden verlas; los enlaces firmados expiran.
+- **Foto liberada al resolver**: al marcar un reporte o sugerencia como **Resuelto/Resuelta** se elimina la foto del bucket `reportes` (el reporte sigue contando en las estadísticas). La acción es **irreversible**.
 
 ---
 
@@ -173,7 +174,7 @@ npm run icons
 - Registro **abierto** (sin restricción de dominio) con rate-limit de 10 intentos/hora/correo.
 - Recuperación de contraseña desde el login con enlace de respaldo.
 - Avisos in-app (campana + contador + pestaña de novedades), sin push.
-- Adjunto de **1 foto** por reporte/sugerencia (bucket privado + RLS + URL firmadas).
+- Adjunto de **1 foto** por reporte/sugerencia (bucket privado + RLS + URL firmadas); se elimina automáticamente al marcarlo como resuelto.
 - Acciones de archivo y borrado para administradores.
 - PWA instalable (manifest, service worker, iconos) y soporte offline del shell.
 - `vercel.json` con headers de seguridad (CSP, `nosniff`, `X-Frame-Options`, `Permissions-Policy`).

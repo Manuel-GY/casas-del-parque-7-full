@@ -434,6 +434,7 @@ begin
       respuesta   = coalesce(p_respuesta, respuesta),
       atendido_por = auth.uid(),
       resuelto_en = case when p_estado = 'resuelto' then now() else resuelto_en end,
+      fotos       = case when p_estado = 'resuelto' then '{}'::text[] else fotos end,
       updated_at  = now()
   where id = p_id;
 
@@ -465,6 +466,7 @@ begin
   set estado       = p_estado,
       respuesta    = coalesce(p_respuesta, respuesta),
       atendido_por = auth.uid(),
+      fotos        = case when p_estado = 'resuelta' then '{}'::text[] else fotos end,
       updated_at   = now()
   where id = p_id;
 
@@ -823,6 +825,14 @@ create policy "reportes_delete_owner" on storage.objects
   using (
     bucket_id = 'reportes'
     and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+drop policy if exists "reportes_delete_comite" on storage.objects;
+create policy "reportes_delete_comite" on storage.objects
+  for delete to authenticated
+  using (
+    bucket_id = 'reportes'
+    and coalesce(public.mi_rol(),'') in ('comite','admin')
   );
 
 -- ============================================================
