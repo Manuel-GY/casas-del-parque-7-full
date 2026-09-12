@@ -284,6 +284,247 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--l
   min-width: 18px; text-align: center; flex-shrink: 0;
 }
 
+/* ==================================================================
+ * Banner Ejecutivo de Administración (Comité / Admin)
+ * ================================================================== */
+.admin-hero-banner {
+  background: linear-gradient(135deg, #14532d 0%, #166534 50%, #0f3c21 100%);
+  color: #fff;
+  border-radius: 24px;
+  padding: 24px 26px;
+  box-shadow: 0 16px 36px rgba(20, 83, 45, 0.22);
+  margin-top: 14px;
+  margin-bottom: 22px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  text-align: left;
+}
+
+.admin-hero-banner::before {
+  content: "";
+  position: absolute;
+  top: -40px; right: -40px;
+  width: 180px; height: 180px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.25) 0%, rgba(251, 191, 36, 0) 70%);
+  pointer-events: none;
+}
+
+.admin-hero-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.admin-hero-title h3 {
+  margin: 0;
+  font-size: 20px;
+  font-family: "Baloo 2", sans-serif;
+  color: #fff;
+  letter-spacing: 0.2px;
+}
+
+.admin-hero-title .admin-badge {
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: inline-block;
+  margin-left: 8px;
+}
+
+.admin-hero-sub {
+  font-size: 13px;
+  color: #dcfce7;
+  margin-top: 4px;
+  font-weight: 600;
+}
+
+.admin-resolution-box {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 16px;
+  padding: 10px 16px;
+  min-width: 210px;
+}
+
+.admin-resolution-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: #f0fdf4;
+}
+
+.admin-resolution-info .pct {
+  font-size: 16px;
+  font-weight: 800;
+  color: #4ade80;
+  font-family: "Baloo 2", sans-serif;
+}
+
+.admin-progress-track {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.admin-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4ade80 0%, #22c55e 100%);
+  border-radius: 999px;
+  transition: width 0.6s ease;
+}
+
+.admin-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.admin-kpi-card {
+  background: rgba(255, 255, 255, 0.09);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 16px;
+  padding: 14px 16px;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.admin-kpi-card:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.admin-kpi-card.alert-nuevos {
+  background: rgba(239, 68, 68, 0.16);
+  border-color: rgba(248, 113, 113, 0.45);
+}
+
+.admin-kpi-card.alert-nuevos:hover {
+  background: rgba(239, 68, 68, 0.24);
+}
+
+.admin-kpi-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.admin-kpi-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.admin-kpi-icon.icon-alert { background: rgba(239, 68, 68, 0.3); color: #fca5a5; }
+.admin-kpi-icon.icon-process { background: rgba(59, 130, 246, 0.3); color: #93c5fd; }
+.admin-kpi-icon.icon-success { background: rgba(34, 197, 94, 0.3); color: #86efac; }
+.admin-kpi-icon.icon-community { background: rgba(245, 158, 11, 0.3); color: #fde047; }
+
+.admin-kpi-num {
+  font-size: 26px;
+  font-weight: 800;
+  font-family: "Baloo 2", sans-serif;
+  line-height: 1;
+  color: #fff;
+}
+
+.admin-kpi-lbl {
+  font-size: 12px;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.admin-kpi-sub {
+  font-size: 11px;
+  color: #cbd5e1;
+  margin-top: 3px;
+  font-weight: 600;
+}
+
+.admin-kpi-pill {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+}
+
+.admin-kpi-pill.urgent {
+  background: #ef4444;
+  color: #fff;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+  animation: pulse-urgent 2s infinite;
+}
+
+@keyframes pulse-urgent {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.65; }
+}
+
+.admin-kpi-pill.ok {
+  background: rgba(34, 197, 94, 0.3);
+  color: #86efac;
+}
+
+/* Summary Bar en la sección de Reportes de la Comunidad */
+.reclamos-kpi-bar {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 14px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.reclamos-kpi-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--forest);
+}
+
+.reclamos-kpi-item .num-badge {
+  font-family: "Baloo 2", sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  padding: 2px 9px;
+  border-radius: 999px;
+}
+.reclamos-kpi-item .num-badge.nuevo { background: #fef3c7; color: #92400e; }
+.reclamos-kpi-item .num-badge.proceso { background: #e0e7ff; color: #3730a3; }
+.reclamos-kpi-item .num-badge.resuelto { background: #dcfce7; color: #166534; }
+
 .card {
   background: var(--soft);
   backdrop-filter: blur(8px);

@@ -249,55 +249,99 @@
       }
       var e = r.data || {};
 
-      // Para admin: mostramos reportes y sugerencias por estado de la comunidad
-      // y un bloque compacto de comunidad
-      var rb = document.getElementById("resumen-banner");
-      if (!rb) return;
+      var totalRec = (e.reportes && e.reportes.total) || 0;
+      var nuevosRec = (e.reportes && e.reportes.nuevo) || 0;
+      var procesoRec = (e.reportes && e.reportes.en_revision) || 0;
+      var resueltosRec = (e.reportes && e.reportes.resuelto) || 0;
+      var totalSug = (e.sugerencias && e.sugerencias.total) || 0;
+      var nuevasSug = (e.sugerencias && e.sugerencias.nueva) || 0;
 
-      // Agrupamos los datos del dashboard en el formato del banner
-      var rec = { nuevo: (e.reportes && e.reportes.nuevo) || 0, en_revision: (e.reportes && e.reportes.en_revision) || 0, resuelto: (e.reportes && e.reportes.resuelto) || 0 };
-      var sug = { nueva: (e.sugerencias && e.sugerencias.nueva) || 0, en_revision: (e.sugerencias && e.sugerencias.en_revision) || 0, resuelta: (e.sugerencias && e.sugerencias.resuelta) || 0 };
+      var pctResueltos = totalRec > 0 ? Math.round((resueltosRec / totalRec) * 100) : 100;
+      var rolNombre = rol === "admin" ? "Administración" : "Comité de Seguridad";
 
-      var textos = {
-        "rec-abierto": function (n) { return n + " abierto" + (n === 1 ? "" : "s"); },
-        "rec-proceso": function (n) { return n + " en proceso"; },
-        "rec-cerrado": function (n) { return n + " cerrado" + (n === 1 ? "" : "s"); },
-        "sug-nueva": function (n) { return n + " nueva" + (n === 1 ? "" : "s"); },
-        "sug-proceso": function (n) { return n + " en proceso"; },
-        "sug-cerrada": function (n) { return n + " cerrada" + (n === 1 ? "" : "s"); }
-      };
-      var valores = {
-        "rec-abierto": rec.nuevo, "rec-proceso": rec.en_revision, "rec-cerrado": rec.resuelto,
-        "sug-nueva": sug.nueva, "sug-proceso": sug.en_revision, "sug-cerrada": sug.resuelta
-      };
-      Object.keys(valores).forEach(function (k) {
-        var el = document.querySelector("[data-rb=\"" + k + "\"]");
-        if (el) el.textContent = textos[k](valores[k] || 0);
-      });
+      // Renderizar Banner Ejecutivo de Administración
+      var hero = document.getElementById("admin-hero-banner");
+      if (hero) {
+        hero.hidden = false;
+        banner.style.display = "none"; // Ocultar el resumen simple de vecinos
+      }
 
-      // También mostramos un bloque pequeño de comunidad debajo del banner
-      var comunidadDiv = document.createElement("div");
-      comunidadDiv.className = "resumen-banner-comunidad";
-      comunidadDiv.innerHTML = `
-        <div class="resumen-banner-grupo">
-          <span class="resumen-banner-titulo">Vecinos registrados</span>
-          <span class="rb-item" data-rb="com-vecinos">${e.vecinos || 0}</span>
-        </div>
-        <div class="resumen-banner-grupo">
-          <span class="resumen-banner-titulo">Casas llenas</span>
-          <span class="rb-item" data-rb="com-casas-llenas">${e.casas_llenas || 0}</span>
-        </div>
-        <div class="resumen-banner-grupo">
-          <span class="resumen-banner-titulo">Reportes comunidad</span>
-          <span class="rb-item" data-rb="com-reportes">${(e.reportes && e.reportes.total) || 0}</span>
-        </div>
-        <div class="resumen-banner-grupo">
-          <span class="resumen-banner-titulo">Sugerencias comunidad</span>
-          <span class="rb-item" data-rb="com-sugerencias">${(e.sugerencias && e.sugerencias.total) || 0}</span>
-        </div>
-      `;
-      // Insertamos después del banner principal
-      banner.parentNode.insertBefore(comunidadDiv, banner.nextSibling);
+      hero.innerHTML =
+        '<div class="admin-hero-header">' +
+          '<div>' +
+            '<div class="admin-hero-title">' +
+              '<h3>🛡️ Panel de Control de la Comunidad</h3>' +
+              '<span class="admin-badge">' + SBH.esc(rolNombre) + '</span>' +
+            '</div>' +
+            '<div class="admin-hero-sub">Panorama en tiempo real del condominio (146 inmuebles)</div>' +
+          '</div>' +
+          '<div class="admin-resolution-box">' +
+            '<div class="admin-resolution-info">' +
+              '<span>Resolución de Reportes</span>' +
+              '<span class="pct">' + pctResueltos + '%</span>' +
+            '</div>' +
+            '<div class="admin-progress-track">' +
+              '<div class="admin-progress-fill" style="width:' + pctResueltos + '%"></div>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="admin-kpi-grid">' +
+          '<div class="admin-kpi-card' + (nuevosRec > 0 ? ' alert-nuevos' : '') + '">' +
+            '<div class="admin-kpi-top">' +
+              '<div class="admin-kpi-icon icon-alert">' +
+                '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>' +
+              '</div>' +
+              (nuevosRec > 0 ? '<span class="admin-kpi-pill urgent">Revisar</span>' : '<span class="admin-kpi-pill ok">Al día</span>') +
+            '</div>' +
+            '<div class="admin-kpi-num">' + nuevosRec + '</div>' +
+            '<div class="admin-kpi-lbl">Sin atender</div>' +
+            '<div class="admin-kpi-sub">Reportes nuevos</div>' +
+          '</div>' +
+
+          '<div class="admin-kpi-card">' +
+            '<div class="admin-kpi-top">' +
+              '<div class="admin-kpi-icon icon-process">' +
+                '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>' +
+              '</div>' +
+            '</div>' +
+            '<div class="admin-kpi-num">' + procesoRec + '</div>' +
+            '<div class="admin-kpi-lbl">En revisión</div>' +
+            '<div class="admin-kpi-sub">En evaluación</div>' +
+          '</div>' +
+
+          '<div class="admin-kpi-card">' +
+            '<div class="admin-kpi-top">' +
+              '<div class="admin-kpi-icon icon-success">' +
+                '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>' +
+              '</div>' +
+            '</div>' +
+            '<div class="admin-kpi-num">' + resueltosRec + '</div>' +
+            '<div class="admin-kpi-lbl">Resueltos</div>' +
+            '<div class="admin-kpi-sub">de ' + totalRec + ' reportes</div>' +
+          '</div>' +
+
+          '<div class="admin-kpi-card">' +
+            '<div class="admin-kpi-top">' +
+              '<div class="admin-kpi-icon icon-community">' +
+                '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>' +
+              '</div>' +
+            '</div>' +
+            '<div class="admin-kpi-num">' + nuevasSug + '</div>' +
+            '<div class="admin-kpi-lbl">Sugerencias</div>' +
+            '<div class="admin-kpi-sub">de ' + totalSug + ' propuestas</div>' +
+          '</div>' +
+
+          '<div class="admin-kpi-card">' +
+            '<div class="admin-kpi-top">' +
+              '<div class="admin-kpi-icon icon-community">' +
+                '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>' +
+              '</div>' +
+            '</div>' +
+            '<div class="admin-kpi-num">' + (e.casas_ocupadas || 0) + ' <span style="font-size:16px;font-weight:600;">/ 146</span></div>' +
+            '<div class="admin-kpi-lbl">Casas habitadas</div>' +
+            '<div class="admin-kpi-sub">' + (e.vecinos || 0) + ' vecinos · ' + (e.casas_llenas || 0) + ' llenas</div>' +
+          '</div>' +
+        '</div>';
     }
   }
 
@@ -757,6 +801,23 @@
     if (q.error) { wrap.innerHTML = '<p class="hint">' + SBH.esc(SBH.fmtErr(q.error.message)) + "</p>"; return; }
     recCache = q.data || [];
     recPage = 1;
+
+    // Resumen KPI compacto para comité/admin en la sección de reportes
+    if (rol === "comite" || rol === "admin") {
+      var nNuevos = recCache.filter(function (r) { return r.estado === "nuevo"; }).length;
+      var nProceso = recCache.filter(function (r) { return r.estado === "en_revision"; }).length;
+      var nResueltos = recCache.filter(function (r) { return r.estado === "resuelto"; }).length;
+      var bar = document.getElementById("reclamos-kpi-bar");
+      if (bar) {
+        bar.hidden = false;
+        bar.innerHTML =
+          '<div class="reclamos-kpi-item"><span>Reportes Totales:</span> <b>' + recCache.length + '</b></div>' +
+          '<div class="reclamos-kpi-item"><span>Sin atender:</span> <span class="num-badge nuevo">' + nNuevos + '</span></div>' +
+          '<div class="reclamos-kpi-item"><span>En revisión:</span> <span class="num-badge proceso">' + nProceso + '</span></div>' +
+          '<div class="reclamos-kpi-item"><span>Resueltos:</span> <span class="num-badge resuelto">' + nResueltos + '</span></div>';
+      }
+    }
+
     rendReclamos();
   }
 
