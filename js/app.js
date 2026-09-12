@@ -192,48 +192,113 @@
   /* ================================================================== */
 
   /**
-   * Llena el banner de resumen personal que va bajo el saludo con las
-   * cantidades SOLO del usuario autenticado: reportes y sugerencias por
-   * estado (abierto / en proceso / cerrado). No consulta datos de otros
-   * vecinos ni cifras de la comunidad.
+   * Llena el banner de resumen que va bajo el saludo. Para el vecino muestra
+   * sus propias gestiones (reportes/sugerencias por estado). Para comité/admin
+   * muestra el panorama completo de la comunidad usando la función RPC
+   * resumen_dashboard.
    */
   async function cargarResumen() {
     var banner = document.getElementById("resumen-banner");
     if (!banner) return;
     banner.classList.add("cargando");
-    var qs = [
-      ["rec-abierto", "rec-proceso", "rec-cerrado"],
-      ["sug-nueva", "sug-proceso", "sug-cerrada"]
-    ];
-    var qr = await SB.client.from("reclamos").select("estado").eq("creado_por", user.id).eq("eliminado", false);
-    var qg = await SB.client.from("sugerencias").select("estado").eq("creado_por", user.id).eq("eliminado", false);
-    banner.classList.remove("cargando");
-    if (qr.error || qg.error) {
-      var msje = SBH.esc(SBH.fmtErr((qr.error || qg.error).message));
-      qs.forEach(function (grp) { grp.forEach(function (id) { var el = document.querySelector("[data-rb=\"" + id + "\"]"); if (el) el.textContent = "·"; }); });
-      return;
-    }
-    var rec = { nuevo: 0, en_revision: 0, resuelto: 0 };
-    (qr.data || []).forEach(function (r) { rec[r.estado] = (rec[r.estado] || 0) + 1; });
-    var sug = { nueva: 0, en_revision: 0, resuelta: 0 };
-    (qg.data || []).forEach(function (s) { sug[s.estado] = (sug[s.estado] || 0) + 1; });
+    var esVecino = rol === "vecino";
 
-    var textos = {
-      "rec-abierto": function (n) { return n + " abierto" + (n === 1 ? "" : "s"); },
-      "rec-proceso": function (n) { return n + " en proceso"; },
-      "rec-cerrado": function (n) { return n + " cerrado" + (n === 1 ? "" : "s"); },
-      "sug-nueva": function (n) { return n + " nueva" + (n === 1 ? "" : "s"); },
-      "sug-proceso": function (n) { return n + " en proceso"; },
-      "sug-cerrada": function (n) { return n + " cerrada" + (n === 1 ? "" : "s"); }
-    };
-    var valores = {
-      "rec-abierto": rec.nuevo, "rec-proceso": rec.en_revision, "rec-cerrado": rec.resuelto,
-      "sug-nueva": sug.nueva, "sug-proceso": sug.en_revision, "sug-cerrada": sug.resuelta
-    };
-    Object.keys(valores).forEach(function (k) {
-      var el = document.querySelector("[data-rb=\"" + k + "\"]");
-      if (el) el.textContent = textos[k](valores[k] || 0);
-    });
+    if (esVecino) {
+      // Vecino: datos personales SOLO
+      var qs = [
+        ["rec-abierto", "rec-proceso", "rec-cerrado"],
+        ["sug-nueva", "sug-proceso", "sug-cerrada"]
+      ];
+      var qr = await SB.client.from("reclamos").select("estado").eq("creado_por", user.id).eq("eliminado", false);
+      var qg = await SB.client.from("sugerencias").select("estado").eq("creado_por", user.id).eq("eliminado", false);
+      banner.classList.remove("cargando");
+      if (qr.error || qg.error) {
+        var msje = SBH.esc(SBH.fmtErr((qr.error || qg.error).message));
+        qs.forEach(function (grp) { grp.forEach(function (id) { var el = document.querySelector("[data-rb=\"" + id + "\"]"); if (el) el.textContent = "·"; }); });
+        return;
+      }
+      var rec = { nuevo: 0, en_revision: 0, resuelto: 0 };
+      (qr.data || []).forEach(function (r) { rec[r.estado] = (rec[r.estado] || 0) + 1; });
+      var sug = { nueva: 0, en_revision: 0, resuelta: 0 };
+      (qg.data || []).forEach(function (s) { sug[s.estado] = (sug[s.estado] || 0) + 1; });
+
+      var textos = {
+        "rec-abierto": function (n) { return n + " abierto" + (n === 1 ? "" : "s"); },
+        "rec-proceso": function (n) { return n + " en proceso"; },
+        "rec-cerrado": function (n) { return n + " cerrado" + (n === 1 ? "" : "s"); },
+        "sug-nueva": function (n) { return n + " nueva" + (n === 1 ? "" : "s"); },
+        "sug-proceso": function (n) { return n + " en proceso"; },
+        "sug-cerrada": function (n) { return n + " cerrada" + (n === 1 ? "" : "s"); }
+      };
+      var valores = {
+        "rec-abierto": rec.nuevo, "rec-proceso": rec.en_revision, "rec-cerrado": rec.resuelto,
+        "sug-nueva": sug.nueva, "sug-proceso": sug.en_revision, "sug-cerrada": sug.resuelta
+      };
+      Object.keys(valores).forEach(function (k) {
+        var el = document.querySelector("[data-rb=\"" + k + "\"]");
+        if (el) el.textContent = textos[k](valores[k] || 0);
+      });
+    } else {
+      // Admin/Comunidad: usa la RPC resumen_dashboard (agregados de toda la comunidad)
+      var r = await SB.client.rpc("resumen_dashboard");
+      banner.classList.remove("cargando");
+      if (r.error) {
+        var msje = SBH.esc(SBH.fmtErr(r.error.message));
+        document.getElementById("resumen-banner").innerHTML = '<p class="hint">' + msje + "</p>";
+        return;
+      }
+      var e = r.data || {};
+
+      // Para admin: mostramos reportes y sugerencias por estado de la comunidad
+      // y un bloque compacto de comunidad
+      var rb = document.getElementById("resumen-banner");
+      if (!rb) return;
+
+      // Agrupamos los datos del dashboard en el formato del banner
+      var rec = { nuevo: (e.reportes && e.reportes.nuevo) || 0, en_revision: (e.reportes && e.reportes.en_revision) || 0, resuelto: (e.reportes && e.reportes.resuelto) || 0 };
+      var sug = { nueva: (e.sugerencias && e.sugerencias.nueva) || 0, en_revision: (e.sugerencias && e.sugerencias.en_revision) || 0, resuelta: (e.sugerencias && e.sugerencias.resuelta) || 0 };
+
+      var textos = {
+        "rec-abierto": function (n) { return n + " abierto" + (n === 1 ? "" : "s"); },
+        "rec-proceso": function (n) { return n + " en proceso"; },
+        "rec-cerrado": function (n) { return n + " cerrado" + (n === 1 ? "" : "s"); },
+        "sug-nueva": function (n) { return n + " nueva" + (n === 1 ? "" : "s"); },
+        "sug-proceso": function (n) { return n + " en proceso"; },
+        "sug-cerrada": function (n) { return n + " cerrada" + (n === 1 ? "" : "s"); }
+      };
+      var valores = {
+        "rec-abierto": rec.nuevo, "rec-proceso": rec.en_revision, "rec-cerrado": rec.resuelto,
+        "sug-nueva": sug.nueva, "sug-proceso": sug.en_revision, "sug-cerrada": sug.resuelta
+      };
+      Object.keys(valores).forEach(function (k) {
+        var el = document.querySelector("[data-rb=\"" + k + "\"]");
+        if (el) el.textContent = textos[k](valores[k] || 0);
+      });
+
+      // También mostramos un bloque pequeño de comunidad debajo del banner
+      var comunidadDiv = document.createElement("div");
+      comunidadDiv.className = "resumen-banner-comunidad";
+      comunidadDiv.innerHTML = `
+        <div class="resumen-banner-grupo">
+          <span class="resumen-banner-titulo">Vecinos registrados</span>
+          <span class="rb-item" data-rb="com-vecinos">${e.vecinos || 0}</span>
+        </div>
+        <div class="resumen-banner-grupo">
+          <span class="resumen-banner-titulo">Casas llenas</span>
+          <span class="rb-item" data-rb="com-casas-llenas">${e.casas_llenas || 0}</span>
+        </div>
+        <div class="resumen-banner-grupo">
+          <span class="resumen-banner-titulo">Reportes comunidad</span>
+          <span class="rb-item" data-rb="com-reportes">${(e.reportes && e.reportes.total) || 0}</span>
+        </div>
+        <div class="resumen-banner-grupo">
+          <span class="resumen-banner-titulo">Sugerencias comunidad</span>
+          <span class="rb-item" data-rb="com-sugerencias">${(e.sugerencias && e.sugerencias.total) || 0}</span>
+        </div>
+      `;
+      // Insertamos después del banner principal
+      banner.parentNode.insertBefore(comunidadDiv, banner.nextSibling);
+    }
   }
 
   async function boot() {
