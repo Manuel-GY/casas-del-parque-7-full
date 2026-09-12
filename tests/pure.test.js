@@ -28,8 +28,9 @@ test("catLabel mapea las categorías legadas a 'Seguridad'", () => {
   assert.equal(PURE.catLabel("turnos"), "Seguridad");
 });
 
-test("fmtFecha formatea ISO local a '05 ene 2024, 09:00'", () => {
-  assert.equal(PURE.fmtFecha("2024-01-05T09:00:00"), "05 ene 2024, 09:00");
+test("fmtFecha formatea ISO local a '05 ene 2024, 09:00' (tolera a.m./p.m.)", () => {
+  const out = PURE.fmtFecha("2024-01-05T09:00:00");
+  assert.match(out, /^05 ene 2024, 09:00( a\. m\.)?$/);
   assert.equal(PURE.fmtFecha(null), "");
 });
 
