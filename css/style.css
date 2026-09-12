@@ -525,6 +525,216 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--l
 .reclamos-kpi-item .num-badge.proceso { background: #e0e7ff; color: #3730a3; }
 .reclamos-kpi-item .num-badge.resuelto { background: #dcfce7; color: #166534; }
 
+/* ==================================================================
+ * Banner Ejecutivo de Vecinos (Residentes)
+ * ================================================================== */
+.vecino-hero-banner {
+  background: linear-gradient(135deg, #15803d 0%, #16a34a 55%, #14532d 100%);
+  color: #fff;
+  border-radius: 18px;
+  padding: 16px 20px;
+  box-shadow: 0 12px 28px rgba(22, 163, 74, 0.2);
+  margin-top: 10px;
+  margin-bottom: 16px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  text-align: left;
+}
+
+.vecino-hero-banner::before {
+  content: "";
+  position: absolute;
+  top: -30px; right: -30px;
+  width: 140px; height: 140px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.25) 0%, rgba(251, 191, 36, 0) 70%);
+  pointer-events: none;
+}
+
+.vecino-hero-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.vecino-hero-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vecino-hero-title h3 {
+  margin: 0;
+  font-size: 17px;
+  font-family: "Baloo 2", sans-serif;
+  color: #fff;
+  letter-spacing: 0.2px;
+}
+
+.vecino-hero-title .vecino-badge {
+  background: rgba(251, 191, 36, 0.22);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.45);
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: inline-block;
+}
+
+.vecino-hero-sub {
+  font-size: 12px;
+  color: #dcfce7;
+  margin-top: 2px;
+  font-weight: 600;
+}
+
+.vecino-privacy-tag {
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #f0fdf4;
+}
+
+.vecino-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.vecino-kpi-card {
+  background: rgba(255, 255, 255, 0.10);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 14px;
+  padding: 12px 14px;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.vecino-kpi-card:hover {
+  background: rgba(255, 255, 255, 0.18);
+  transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.vecino-kpi-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.vecino-kpi-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+
+.vecino-kpi-icon.icon-rec { background: rgba(59, 130, 246, 0.3); color: #93c5fd; }
+.vecino-kpi-icon.icon-sug { background: rgba(245, 158, 11, 0.3); color: #fde047; }
+
+.vecino-kpi-num {
+  font-size: 22px;
+  font-weight: 800;
+  font-family: "Baloo 2", sans-serif;
+  line-height: 1;
+  color: #fff;
+}
+
+.vecino-kpi-lbl {
+  font-size: 12px;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.vecino-kpi-sub {
+  font-size: 10px;
+  color: #cbd5e1;
+  margin-top: 2px;
+  font-weight: 600;
+}
+
+.vecino-kpi-pill {
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 999px;
+  text-transform: uppercase;
+}
+
+.vecino-kpi-pill.process { background: rgba(251, 191, 36, 0.25); color: #fbbf24; }
+.vecino-kpi-pill.ok { background: rgba(34, 197, 94, 0.3); color: #86efac; }
+.vecino-kpi-pill.voice { background: rgba(147, 197, 253, 0.25); color: #93c5fd; }
+
+.vecino-quick-actions {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.vecino-btn-group {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.vecino-action-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 0;
+  border-radius: 10px;
+  padding: 7px 10px;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.vecino-action-btn.primary {
+  background: #fff;
+  color: #15803d;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+}
+
+.vecino-action-btn.primary:hover {
+  background: #f0fdf4;
+  transform: translateY(-1px);
+}
+
+.vecino-action-btn.ghost {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.vecino-action-btn.ghost:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
+}
+
 .card {
   background: var(--soft);
   backdrop-filter: blur(8px);

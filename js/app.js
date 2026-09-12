@@ -205,16 +205,12 @@
 
     if (esVecino) {
       // Vecino: datos personales SOLO
-      var qs = [
-        ["rec-abierto", "rec-proceso", "rec-cerrado"],
-        ["sug-nueva", "sug-proceso", "sug-cerrada"]
-      ];
       var qr = await SB.client.from("reclamos").select("estado").eq("creado_por", user.id).eq("eliminado", false);
       var qg = await SB.client.from("sugerencias").select("estado").eq("creado_por", user.id).eq("eliminado", false);
       banner.classList.remove("cargando");
       if (qr.error || qg.error) {
         var msje = SBH.esc(SBH.fmtErr((qr.error || qg.error).message));
-        qs.forEach(function (grp) { grp.forEach(function (id) { var el = document.querySelector("[data-rb=\"" + id + "\"]"); if (el) el.textContent = "·"; }); });
+        banner.innerHTML = '<p class="hint">' + msje + "</p>";
         return;
       }
       var rec = { nuevo: 0, en_revision: 0, resuelto: 0 };
@@ -222,22 +218,84 @@
       var sug = { nueva: 0, en_revision: 0, resuelta: 0 };
       (qg.data || []).forEach(function (s) { sug[s.estado] = (sug[s.estado] || 0) + 1; });
 
-      var textos = {
-        "rec-abierto": function (n) { return n + " abierto" + (n === 1 ? "" : "s"); },
-        "rec-proceso": function (n) { return n + " en proceso"; },
-        "rec-cerrado": function (n) { return n + " cerrado" + (n === 1 ? "" : "s"); },
-        "sug-nueva": function (n) { return n + " nueva" + (n === 1 ? "" : "s"); },
-        "sug-proceso": function (n) { return n + " en proceso"; },
-        "sug-cerrada": function (n) { return n + " cerrada" + (n === 1 ? "" : "s"); }
-      };
-      var valores = {
-        "rec-abierto": rec.nuevo, "rec-proceso": rec.en_revision, "rec-cerrado": rec.resuelto,
-        "sug-nueva": sug.nueva, "sug-proceso": sug.en_revision, "sug-cerrada": sug.resuelta
-      };
-      Object.keys(valores).forEach(function (k) {
-        var el = document.querySelector("[data-rb=\"" + k + "\"]");
-        if (el) el.textContent = textos[k](valores[k] || 0);
-      });
+      var recTotal = (qr.data || []).length;
+      var recAbiertos = rec.nuevo + rec.en_revision;
+      var recResueltos = rec.resuelto;
+
+      var sugTotal = (qg.data || []).length;
+      var sugPendientes = sug.nueva + sug.en_revision;
+      var sugResueltas = sug.resuelta;
+
+      var vHero = document.getElementById("vecino-hero-banner");
+      if (vHero) {
+        vHero.hidden = false;
+        banner.style.display = "none";
+
+        vHero.innerHTML =
+          '<div class="vecino-hero-header">' +
+            '<div>' +
+              '<div class="vecino-hero-title">' +
+                '<h3>🏡 Tu Espacio Comunitario</h3>' +
+                '<span class="vecino-badge">' + (profile.numero_casa ? "Casa " + profile.numero_casa : "Vecino") + '</span>' +
+              '</div>' +
+              '<div class="vecino-hero-sub">Reportes y sugerencias confidenciales del condominio</div>' +
+            '</div>' +
+            '<div class="vecino-privacy-tag">' +
+              '<span>🔒 Privacidad Activa</span>' +
+            '</div>' +
+          '</div>' +
+          '<div class="vecino-kpi-grid">' +
+            '<div class="vecino-kpi-card" id="btn-kpi-rec" style="cursor:pointer;" title="Ver mis reportes">' +
+              '<div class="vecino-kpi-top">' +
+                '<div class="vecino-kpi-icon icon-rec">' +
+                  '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' +
+                '</div>' +
+                (recAbiertos > 0 ? '<span class="vecino-kpi-pill process">En gestión</span>' : '<span class="vecino-kpi-pill ok">Al día</span>') +
+              '</div>' +
+              '<div class="vecino-kpi-num">' + recTotal + '</div>' +
+              '<div class="vecino-kpi-lbl">Mis reportes</div>' +
+              '<div class="vecino-kpi-sub">' + recAbiertos + ' pendientes · ' + recResueltos + ' resueltos</div>' +
+            '</div>' +
+
+            '<div class="vecino-kpi-card" id="btn-kpi-sug" style="cursor:pointer;" title="Ver mis sugerencias">' +
+              '<div class="vecino-kpi-top">' +
+                '<div class="vecino-kpi-icon icon-sug">' +
+                  '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>' +
+                '</div>' +
+                '<span class="vecino-kpi-pill voice">Tu voz cuenta</span>' +
+              '</div>' +
+              '<div class="vecino-kpi-num">' + sugTotal + '</div>' +
+              '<div class="vecino-kpi-lbl">Mis sugerencias</div>' +
+              '<div class="vecino-kpi-sub">' + sugPendientes + ' pendientes · ' + sugResueltas + ' resueltas</div>' +
+            '</div>' +
+
+            '<div class="vecino-kpi-card vecino-quick-actions">' +
+              '<div class="vecino-kpi-lbl" style="margin-bottom:8px;">Acciones rápidas</div>' +
+              '<div class="vecino-btn-group">' +
+                '<button class="vecino-action-btn primary" id="btn-quick-report" type="button">' +
+                  '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>' +
+                  'Nuevo reporte' +
+                '</button>' +
+                '<button class="vecino-action-btn ghost" id="btn-quick-suggest" type="button">' +
+                  '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>' +
+                  'Sugerir' +
+                '</button>' +
+              '</div>' +
+            '</div>' +
+          '</div>';
+
+        var bRec = document.getElementById("btn-quick-report");
+        if (bRec) bRec.addEventListener("click", function () { mostrarSeccion("sec-nuevo"); });
+
+        var bSug = document.getElementById("btn-quick-suggest");
+        if (bSug) bSug.addEventListener("click", function () { mostrarSeccion("sec-sugerir"); });
+
+        var kRec = document.getElementById("btn-kpi-rec");
+        if (kRec) kRec.addEventListener("click", function () { mostrarSeccion("sec-mios"); });
+
+        var kSug = document.getElementById("btn-kpi-sug");
+        if (kSug) kSug.addEventListener("click", function () { mostrarSeccion("sec-mias"); });
+      }
     } else {
       // Admin/Comunidad: usa la RPC resumen_dashboard (agregados de toda la comunidad)
       var r = await SB.client.rpc("resumen_dashboard");
