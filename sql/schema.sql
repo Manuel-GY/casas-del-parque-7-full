@@ -368,6 +368,9 @@ $$;
 -- ============================================================
 -- 9) DETALLE DE RECLAMOS (solo comité/admin)
 -- ============================================================
+-- Al re-ejecutar, se elimina la versión previa para permitir cambiar el
+-- tipo de retorno (evita el error 42P13 "cannot change return type").
+drop function if exists public.reclamos_detalle();
 create or replace function public.reclamos_detalle()
 returns table (
   id              uuid,
@@ -570,6 +573,7 @@ $$;
 -- ============================================================
 -- 12) DETALLE DE SUGERENCIAS (solo comité/admin)
 -- ============================================================
+drop function if exists public.sugerencias_detalle();
 create or replace function public.sugerencias_detalle()
 returns table (
   id              uuid,
