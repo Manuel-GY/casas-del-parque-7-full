@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "test": "node --test tests/pure.test.js tests/smoke.test.js",
+    "db:push": "node scripts/apply-schema.mjs",
     "icons": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/make-icons.ps1"
   },
   "engines": {

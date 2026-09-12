@@ -9,7 +9,7 @@
  */
 "use strict";
 
-var VERSION = "cdp7-v2.0.5";
+var VERSION = "cdp7-v2.0.6";
 
 var APP_SHELL = [
   "./",

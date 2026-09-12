@@ -25,9 +25,10 @@
   <!--
     app.html - Panel principal del condominio.
     Estructura: topbar (marca, perfil, campana, salir) -> secciones dentro
-    de #app-main (nuevo reporte, mis reportes, sugerir, mis sugerencias,
-    novedades, y para comite/admin: reportes, sugerencias, estadisticas,
-    usuarios). Las vistas se muestran/ocultan desde js/app.js (mostrarSeccion).
+    de #app-main (resumen, nuevo reporte, mis reportes, sugerir, mis
+    sugerencias, novedades, y para comite/admin: reportes, sugerencias,
+    estadisticas, usuarios). Las vistas se muestran/ocultan desde
+    js/app.js (mostrarSeccion).
     No usa script inline: todo vive en js/*.js (compatible con CSP).
   -->
   <header class="topbar">
@@ -101,6 +102,25 @@
       </div>
 
       <nav class="tabs" id="nav"></nav>
+
+      <section id="sec-resumen" hidden>
+        <div class="card">
+          <h2>Resumen</h2>
+          <p class="sub" id="resumen-sub">Vistazo rápido a tus gestiones y a la comunidad.</p>
+          <div class="resumen-block">
+            <h3 id="resumen-rec-title">Mis reportes</h3>
+            <div class="stats-grid" id="resumen-rec"></div>
+          </div>
+          <div class="resumen-block">
+            <h3 id="resumen-sug-title">Mis sugerencias</h3>
+            <div class="stats-grid" id="resumen-sug"></div>
+          </div>
+          <div class="resumen-block">
+            <h3 id="resumen-com-title">Comunidad</h3>
+            <div class="stats-grid" id="resumen-com"></div>
+          </div>
+        </div>
+      </section>
 
       <section id="sec-nuevo" hidden>
         <div class="card">

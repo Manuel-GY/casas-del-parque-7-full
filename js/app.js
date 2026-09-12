@@ -141,7 +141,10 @@
     var nav = document.getElementById("nav");
     nav.innerHTML = "";
 
+    var resumenTab = { id: "sec-resumen", txt: "Resumen", icon: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>' };
+
     var tabs = [
+      resumenTab,
       { id: "sec-nuevo", txt: "Reportar", icon: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>' },
       { id: "sec-mios", txt: "Mis Reportes", icon: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' },
       { id: "sec-sugerir", txt: "Sugerir", icon: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>' },
@@ -149,6 +152,7 @@
     ];
     if (rol === "comite" || rol === "admin") {
       tabs = [
+        resumenTab,
         { id: "sec-reclamos", txt: "Reportes", icon: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' },
         { id: "sec-sugerencias", txt: "Sugerencias", icon: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>' },
         { id: "sec-stats", txt: "Estadísticas", icon: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>' }
@@ -172,12 +176,13 @@
   }
 
   function mostrarSeccion(id) {
-    var secciones = ["sec-nuevo", "sec-mios", "sec-sugerir", "sec-mias", "sec-novedades", "sec-reclamos", "sec-sugerencias", "sec-stats", "sec-usuarios"];
+    var secciones = ["sec-resumen", "sec-nuevo", "sec-mios", "sec-sugerir", "sec-mias", "sec-novedades", "sec-reclamos", "sec-sugerencias", "sec-stats", "sec-usuarios"];
     secciones.forEach(function (s) { document.getElementById(s).hidden = (s !== id); });
     document.querySelectorAll("#nav .tab").forEach(function (t) {
       t.classList.toggle("active", t.dataset.target === id);
     });
 
+    if (id === "sec-resumen") cargarResumen();
     if (id === "sec-mios") cargarMios();
     if (id === "sec-mias") cargarMias();
     if (id === "sec-novedades") abrirNovedades();
@@ -185,6 +190,100 @@
     if (id === "sec-sugerencias") cargarSugerencias();
     if (id === "sec-stats") setTimeout(cargarStats, 40);
     if (id === "sec-usuarios") cargarUsuarios();
+  }
+
+  /* ================================================================== */
+  /*  Dashboard: Resumen                                                 */
+  /* ================================================================== */
+
+  /**
+   * Renderiza el resumen del panel en tres bloques: reportes, sugerencias
+   * y comunidad. Para el vecino los reportes/sugerencias son SOM ({sus}
+   * gestiones; para comité/admin de TODA la comunidad, según el rol.
+   * Restricciones: los datos propios vienen de consultas filtradas por
+   * creado_por y los comunitarios de la función resumen_dashboard (solo
+   * agregados, sin nombres ni contenido).
+   */
+  async function cargarResumen() {
+    var WIDS = { rec: "resumen-rec", sug: "resumen-sug", com: "resumen-com" };
+    var sub = document.getElementById("resumen-sub");
+    var tRec = document.getElementById("resumen-rec-title");
+    var tSug = document.getElementById("resumen-sug-title");
+    var tCom = document.getElementById("resumen-com-title");
+    var gRec = document.getElementById(WIDS.rec);
+    var gSug = document.getElementById(WIDS.sug);
+    var gCom = document.getElementById(WIDS.com);
+
+    (gRec ? [gRec, gSug, gCom] : []).forEach(function (g) { if (g) g.innerHTML = '<p class="hint">Cargando...</p>'; });
+
+    var esVecino = rol === "vecino";
+    var rpcOK = true;
+    var e = null;
+
+    if (esVecino) {
+      if (sub) sub.textContent = profile.numero_casa
+        ? "Resumen de tu casa " + profile.numero_casa + " y de la comunidad."
+        : "Resumen de tu gestión y de la comunidad.";
+      if (tRec) tRec.textContent = "Mis reportes";
+      if (tSug) tSug.textContent = "Mis sugerencias";
+      if (tCom) tCom.textContent = "Comunidad";
+
+      var qr = await SB.client.from("reclamos").select("estado").eq("creado_por", user.id).eq("eliminado", false);
+      var qs = await SB.client.from("sugerencias").select("estado").eq("creado_por", user.id).eq("eliminado", false);
+      if (qr.error || qs.error) {
+        var msje = SBH.esc(SBH.fmtErr((qr.error || qs.error).message));
+        gRec.innerHTML = '<p class="hint">' + msje + "</p>";
+        return;
+      }
+      var misRec = { nuevo: 0, en_revision: 0, resuelto: 0 };
+      (qr.data || []).forEach(function (r) { misRec[r.estado] = (misRec[r.estado] || 0) + 1; });
+      var misSug = { nueva: 0, en_revision: 0, resuelta: 0 };
+      (qs.data || []).forEach(function (s) { misSug[s.estado] = (misSug[s.estado] || 0) + 1; });
+
+      gRec.innerHTML =
+        statCard(misRec.nuevo || 0, "Abiertos") +
+        statCard(misRec.en_revision || 0, "En proceso") +
+        statCard(misRec.resuelto || 0, "Cerrados");
+      gSug.innerHTML =
+        statCard(misSug.nueva || 0, "Abiertas") +
+        statCard(misSug.en_revision || 0, "En proceso") +
+        statCard(misSug.resuelta || 0, "Cerradas");
+    } else {
+      if (sub) sub.textContent = "Panorama de toda la comunidad (para la administración).";
+      if (tRec) tRec.textContent = "Reportes de la comunidad";
+      if (tSug) tSug.textContent = "Sugerencias de la comunidad";
+      if (tCom) tCom.textContent = "Comunidad";
+    }
+
+    var r = await SB.client.rpc("resumen_dashboard");
+    if (r.error) {
+      gCom.innerHTML = '<p class="hint">' + SBH.esc(SBH.fmtErr(r.error.message)) + "</p>";
+      return;
+    }
+    e = r.data || {};
+
+    if (!esVecino) {
+      var rc = e.reportes || {}, sc = e.sugerencias || {};
+      gRec.innerHTML =
+        statCard(rc.nuevo || 0, "Abiertos") +
+        statCard(rc.en_revision || 0, "En proceso") +
+        statCard(rc.resuelto || 0, "Cerrados");
+      gSug.innerHTML =
+        statCard(sc.nueva || 0, "Abiertas") +
+        statCard(sc.en_revision || 0, "En proceso") +
+        statCard(sc.resuelta || 0, "Cerradas");
+      gCom.innerHTML =
+        statCard(e.vecinos || 0, "Vecinos") +
+        statCard(e.comite || 0, "Comité") +
+        statCard(e.casas_ocupadas || 0, "Casas con vecinos") +
+        statCard(e.casas_llenas || 0, "Casas llenas");
+    } else {
+      gCom.innerHTML =
+        statCard(e.vecinos || 0, "Vecinos registrados") +
+        statCard(e.casas_llenas || 0, "Casas con 2 vecinos") +
+        statCard((e.reportes && e.reportes.total) || 0, "Reportes de la comunidad") +
+        statCard((e.sugerencias && e.sugerencias.total) || 0, "Sugerencias de la comunidad");
+    }
   }
 
   async function boot() {

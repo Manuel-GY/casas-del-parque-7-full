@@ -4,6 +4,14 @@ Plataforma web (**Serverless & Zero-Build**) desplegada en **Vercel** con backen
 
 > ⚠️ Esta es la **versión completa** (repositorio `casas-del-parque-7-full`). Usa una base de datos Supabase **independiente** de la versión de guardias (`casas-del-parque-7`), por lo que los datos no se mezclan.
 
+### 🌐 Acceso a la plataforma (GitHub Pages)
+
+Entra desde el **teléfono o cualquier navegador** (la PWA se instala desde el navegador):
+
+**https://manuel-gy.github.io/casas-del-parque-7-full/**
+
+> Los cambios se publican solos al hacer `git push` a la rama `main` (Action de Pages). Si no ves la última versión, **fuerza un refresco** (en el teléfono: Android borra el historial/caché del navegador o usa la opción "Recargar sin caché"; en el sitio, `Ctrl+F5` en PC).
+
 ---
 
 ## 🟢 Diferencias con la versión de guardias
@@ -31,6 +39,7 @@ Plataforma web (**Serverless & Zero-Build**) desplegada en **Vercel** con backen
 - **Fotos Adjuntas**: **1 foto** por reporte o sugerencia, subida a un bucket privado protegido por RLS.
 - **Envío de Sugerencias**: propuestas para la mejora comunitaria.
 - **Historial Privado**: visualización exclusiva de sus propias solicitudes y de la respuesta del Comité / Administración.
+- **Dashboard Resumen**: pestaña inicial que resume tus gestiones (reportes/sugerencias abiertas y resueltas) junto con cifras agregadas de la comunidad (vecinos registrados, casas llenas, total de reportes y sugerencias).
 - **Estadísticas Comunitarias**: métricas anónimas agregadas por mes, categoría y estado, con exportación a Excel.
 
 ### 🔔 Avisos dentro de la app
@@ -39,6 +48,7 @@ Plataforma web (**Serverless & Zero-Build**) desplegada en **Vercel** con backen
 - Las tarjetas nuevas se marcan en amarillo y sus fotos se pueden ampliar.
 
 ### 🛡️ Para el Comité y la Administración
+- **Dashboard Resumen**: panorama general de la comunidad (vecinos, comité, casas ocupadas/llenas, reportes y sugerencias pendientes y resueltas) en la pestaña inicial.
 - **Panel de Control Completo**: gestión detallada de todos los reportes y sugerencias con estado (*Nuevo*, *En revisión*, *Resuelto*).
 - **Buscador en Tiempo Real**: filtrado por palabra clave, título, detalle o número de casa.
 - **Exportación a CSV / Excel**: descarga en formato `.csv` compatible con Microsoft Excel (UTF-8 con BOM).
@@ -86,6 +96,12 @@ Plataforma web (**Serverless & Zero-Build**) desplegada en **Vercel** con backen
    ```
 5. En **Project Settings → API** copia la **Project URL** y la **anon / publishable key**.
 6. En **Storage → Buckets**: verifica que exista el bucket `reportes` (lo crea `schema.sql`) y que las políticas estén activas (también van en el mismo script).
+
+### 1b. Aplicar cambios de SQL automáticamente (recomendado)
+Ya no es necesario copiar y pegar el schema en el SQL Editor cada vez que cambia:
+
+- **Localmente**: `npm run db:push` lee `sql/schema.sql`, lo envía a la Management API de Supabase y aplica TODO (es idempotente). Requiere un **Personal Access Token** (`sbp_...`, con permiso *Database → Read-write*) generado en `Account → Access Tokens` y guardado como variable `SUPABASE_ACCESS_TOKEN` o en un archivo `.env.local` (ignorado por git).
+- **Automáticamente en CI**: el workflow `.github/workflows/db-push.yml` aplica `sql/schema.sql` en cada `push` a `main` que lo modifique. Solo hay que crear un **GitHub Secret** `SUPABASE_ACCESS_TOKEN` con el mismo token (`gh secret set SUPABASE_ACCESS_TOKEN`). El token jamás se versiona.
 
 ### 2. Configurar credenciales
 Edita [`config.js`](config.js) con la URL y la anon key del proyecto nuevo:
@@ -149,7 +165,7 @@ npm run icons
 
 ```
 ├── index.html           Login, registro, recuperación de contraseña, privacidad y modal
-├── app.html             Panel principal (Vecino / Comité / Admin), navegación, novedades y formularios
+├── app.html             Panel principal (Resumen / Vecino / Comité / Admin), navegación, novedades y formularios
 ├── manifest.webmanifest Manifesto PWA (nombre, colores, iconos)
 ├── sw.js                Service Worker (cache de app shell, fallback offline)
 ├── config.js            Credenciales públicas (URL + anon key de Supabase) — versionado
@@ -159,14 +175,14 @@ npm run icons
 ├── js/supabase.min.js   SDK de Supabase (self-hosted, sin CDN externo)
 ├── js/auth.js           Cliente Supabase, catálogo de categorías, traducción de errores y modal
 ├── js/index.js          Lógica de autenticación y recuperación de contraseña
-├── js/app.js            Panel dinámico, novedades, fotos, validaciones y exportación CSV
+├── js/app.js            Panel dinámico (resumen, novedades, fotos, validaciones, exportación CSV)
 ├── js/stats.js          Motor de gráficos dinámicos en HTML5 Canvas (sin dependencias)
 ├── js/register-sw.js    Registro del Service Worker (archivo externo por CSP)
 ├── icons/               Iconos PNG del PWA (192, 512, 180 y maskable)
-├── scripts/make-icons.ps1 Generador de iconos (PowerShell + System.Drawing)
-├── sql/schema.sql       Esquema de BD, funciones SECURITY DEFINER, triggers y políticas RLS
+├── scripts/             Utilidades: make-icons.ps1 (iconos) y apply-schema.mjs (deploy BD)
+├── sql/schema.sql       Esquema de BD (idempotente), funciones SECURITY DEFINER y políticas RLS
 ├── tests/               Tests de Node (helpers puros + smoke de la webapp)
-├── .github/workflows/ci.yml CI en GitHub Actions
+├── .github/workflows/   ci.yml (tests en push/PR) + db-push.yml (aplica schema automáticamente)
 └── vercel.json          Config de deploy estático + headers de seguridad en Vercel
 ```
 

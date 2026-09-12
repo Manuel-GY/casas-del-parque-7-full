@@ -7,3 +7,5 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+.env
+.env.local

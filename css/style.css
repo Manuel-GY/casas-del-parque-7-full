@@ -392,6 +392,15 @@ nav.tabs .tab.active {
 }
 
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 20px; }
+.resumen-block h3 {
+  margin: 22px 0 10px;
+  font-size: 15px;
+  color: var(--forest);
+  font-weight: 800;
+  border-bottom: 2px dashed rgba(20, 83, 45, .12);
+  padding-bottom: 6px;
+}
+.resumen-block:first-child h3 { margin-top: 4px; }
 .stat {
   position: relative;
   background: var(--soft);

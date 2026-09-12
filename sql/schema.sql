@@ -833,10 +833,16 @@ create policy "reportes_upload_owner" on storage.objects
   with check (
     bucket_id = 'reportes'
     and (storage.foldername(name))[1] = auth.uid()::text
-    -- Endurecimiento: solo imagenes y maximo 5 MB (metadata la envia el
-    -- cliente Supabase al subir; si falta o no es imagen, se rechaza).
+    -- Endurecimiento: solo imagenes y maximo 5 MB. Al insertar, el storage
+    -- escribe metadata con las claves mimetype y contentLength (size se
+    -- agrega en un update posterior), por lo que se usa contentLength
+    -- primero y size como respaldo en servidores mas antiguos.
     and coalesce(metadata->>'mimetype','') like 'image/%'
-    and coalesce((metadata->>'size')::bigint, 0) between 1 and 5 * 1024 * 1024
+    and coalesce(
+          (metadata->>'contentLength')::bigint,
+          (metadata->>'size')::bigint,
+          0
+        ) between 1 and 5 * 1024 * 1024
   );
 
 drop policy if exists "reportes_lectura_owner" on storage.objects;
@@ -872,7 +878,52 @@ create policy "reportes_delete_comite" on storage.objects
   );
 
 -- ============================================================
--- 17) PRIMER ADMINISTRADOR
+-- 17) RESUMEN DEL DASHBOARD (agregado, sin datos personales)
+-- ============================================================
+-- Devuelve conteos de la comunidad: casas, vecinos, comite/admin,
+-- reportes y sugerencias por estado. Datos AGREGADOS que no revelan
+-- identidad ni contenido personal. Disponible para cualquier
+-- usuario autenticado (vecinos y comité/admin).
+-- ============================================================
+create or replace function public.resumen_dashboard()
+returns jsonb
+language plpgsql stable security definer
+set search_path = public
+as $$
+declare
+  v_json jsonb;
+begin
+  select jsonb_build_object(
+    'total_casas',    (select count(*)::int from public.casas),
+    'vecinos',        (select count(*)::int from public.profiles where rol = 'vecino'),
+    'comite',         (select count(*)::int from public.profiles where rol = 'comite'),
+    'admins',         (select count(*)::int from public.profiles where rol = 'admin'),
+    'casas_ocupadas', (select count(distinct numero_casa)::int from public.profiles where rol = 'vecino' and numero_casa is not null),
+    'casas_llenas',   (select count(*)::int from (
+      select numero_casa from public.profiles
+      where rol = 'vecino' and numero_casa is not null
+      group by numero_casa having count(*) >= 2
+    ) t),
+    'reportes', jsonb_build_object(
+      'total',      (select count(*)::int from public.reclamos where not eliminado),
+      'nuevo',      (select count(*)::int from public.reclamos where not eliminado and estado = 'nuevo'),
+      'en_revision',(select count(*)::int from public.reclamos where not eliminado and estado = 'en_revision'),
+      'resuelto',   (select count(*)::int from public.reclamos where not eliminado and estado = 'resuelto')
+    ),
+    'sugerencias', jsonb_build_object(
+      'total',      (select count(*)::int from public.sugerencias where not eliminado),
+      'nueva',      (select count(*)::int from public.sugerencias where not eliminado and estado = 'nueva'),
+      'en_revision',(select count(*)::int from public.sugerencias where not eliminado and estado = 'en_revision'),
+      'resuelta',   (select count(*)::int from public.sugerencias where not eliminado and estado = 'resuelta')
+    )
+  ) into v_json;
+
+  return v_json;
+end;
+$$;
+
+-- ============================================================
+-- 18) PRIMER ADMINISTRADOR
 -- ============================================================
 -- Ejecutar en el SQL Editor después de crear la primera cuenta
 -- como vecino desde la interfaz web:
