@@ -61,3 +61,23 @@ test("construirCSV escapa comas, comillas y produce cabecera", () => {
 test("construirCSV con datos vacíos devuelve cadena vacía", () => {
   assert.equal(PURE.construirCSV([], []), "");
 });
+
+test("construirCSV neutraliza formula injection (= + - @ tab)", () => {
+  const csv = PURE.construirCSV(
+    [
+      { v: '=HYPERLINK("http://x","Click")' },
+      { v: "+SUM(A1:A9)" },
+      { v: "-2+3" },
+      { v: "@cmd" },
+      { v: "hola mundo" }
+    ],
+    [{ label: "V", val: (r) => r.v }]
+  );
+  const lines = csv.split("\n");
+  assert.equal(lines[0], '"V"');
+  assert.ok(lines[1].includes("'=HYPERLINK"), lines[1]);
+  assert.ok(lines[2].includes("'+SUM"), lines[2]);
+  assert.ok(lines[3].includes("'-2"), lines[3]);
+  assert.ok(lines[4].includes("'@cmd"), lines[4]);
+  assert.ok(lines[5].includes("hola mundo"), lines[5]);
+});

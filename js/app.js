@@ -529,12 +529,22 @@
   /**
    * Sube todas las fotos al bucket privado "reportes/{user.id}/" y
    * devuelve los paths (o null si algo falla).
+   *
+   * Defensa en dos capas:
+   *   - Antes de subir: rechazo client-side si la foto comprimida supera
+   *     5 MB (la politica de storage tambien lo valida en la base de datos).
+   *   - La subida siempre es JPEG (la imagen se re-comprime abajo).
    */
   async function subirFotos(files) {
+    var MAX_BYTES = 5 * 1024 * 1024; // 5 MB
     var paths = [];
     for (var i = 0; i < files.length; i++) {
       try {
         var blob = await resizeImage(files[i], 1280);
+        if (blob.size > MAX_BYTES) {
+          SBH.mostrar("msg", "La foto supera los 5 MB incluso comprimida. Prueba con una de menor resolución.", "error");
+          return null;
+        }
         var path = user.id + "/" + uid() + ".jpg";
         var up = await SB.client.storage.from("reportes").upload(path, blob, { contentType: "image/jpeg" });
         if (up.error) {
@@ -560,6 +570,7 @@
     var q = await SB.client.from("sugerencias")
       .select("*")
       .eq("creado_por", user.id)
+      .eq("eliminado", false)
       .order("created_at", { ascending: false });
     if (q.error) { wrap.innerHTML = '<p class="hint">' + SBH.esc(SBH.fmtErr(q.error.message)) + "</p>"; return; }
     if (!q.data.length) { wrap.innerHTML = '<p class="hint">Aún no has enviado sugerencias.</p>'; return; }
@@ -594,6 +605,7 @@
     var q = await SB.client.from("reclamos")
       .select("*")
       .eq("creado_por", user.id)
+      .eq("eliminado", false)
       .order("created_at", { ascending: false });
     if (q.error) { wrap.innerHTML = '<p class="hint">' + SBH.esc(SBH.fmtErr(q.error.message)) + "</p>"; return; }
     if (!q.data.length) { wrap.innerHTML = '<p class="hint">Aún no has enviado reportes.</p>'; return; }

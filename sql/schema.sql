@@ -746,10 +746,11 @@ alter table public.reclamos          enable row level security;
 alter table public.sugerencias       enable row level security;
 alter table public.intentos_registro enable row level security;
 
--- CASAS: lectura libre para todos los autenticados
+-- CASAS: lectura para usuarios autenticados (los anonimos no la necesitan:
+-- el select de casas del registro usa la lista estatica del cliente).
 drop policy if exists "casas_lectura" on public.casas;
 create policy "casas_lectura" on public.casas
-  for select using (true);
+  for select to authenticated using (true);
 
 -- PROFILES: cada usuario solo ve su propio perfil
 drop policy if exists "profiles_mi_miembro" on public.profiles;
@@ -783,7 +784,7 @@ create policy "reclamos_insert" on public.reclamos
 drop policy if exists "reclamos_select_mios" on public.reclamos;
 create policy "reclamos_select_mios" on public.reclamos
   for select to authenticated
-  using (creado_por = auth.uid());
+  using (creado_por = auth.uid() and not eliminado);
 
 -- RECLAMOS SELECT (comité/admin): ven todos via la función RPC
 drop policy if exists "reclamos_select_comite" on public.reclamos;
@@ -807,7 +808,7 @@ create policy "sugerencias_insert" on public.sugerencias
 drop policy if exists "sugerencias_select_mias" on public.sugerencias;
 create policy "sugerencias_select_mias" on public.sugerencias
   for select to authenticated
-  using (creado_por = auth.uid());
+  using (creado_por = auth.uid() and not eliminado);
 
 -- SUGERENCIAS SELECT (comité/admin): ven todas via la función RPC
 drop policy if exists "sugerencias_select_comite" on public.sugerencias;
@@ -832,6 +833,10 @@ create policy "reportes_upload_owner" on storage.objects
   with check (
     bucket_id = 'reportes'
     and (storage.foldername(name))[1] = auth.uid()::text
+    -- Endurecimiento: solo imagenes y maximo 5 MB (metadata la envia el
+    -- cliente Supabase al subir; si falta o no es imagen, se rechaza).
+    and coalesce(metadata->>'mimetype','') like 'image/%'
+    and coalesce((metadata->>'size')::bigint, 0) between 1 and 5 * 1024 * 1024
   );
 
 drop policy if exists "reportes_lectura_owner" on storage.objects;

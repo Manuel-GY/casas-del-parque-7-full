@@ -117,6 +117,13 @@
   }
 
   /**
+   * Caracteres que convierten una celda en formula/celda "peligrosa" al
+   * abrir el CSV en Excel/Google Sheets (OWASP CSV Injection). Si el valor
+   * empieza con alguno, se antepone una comilla simple para neutralizarlo.
+   */
+  var INICIO_FORMULA = /^[=+\-@\t\r\n]/;
+
+  /**
    * Construye el contenido CSV (sin BOM) desde un array de objetos.
    * @param {Array} datos - Array de objetos
    * @param {Array} columnas - Definicion de columnas [{ label, val }]
@@ -129,6 +136,7 @@
       return columnas.map(function (c) {
         var val = c.val(row);
         val = (val == null) ? "" : String(val);
+        if (INICIO_FORMULA.test(val)) val = "'" + val; // Anti formula-injection
         return '"' + val.replace(/"/g, '""') + '"';
       }).join(",");
     });
