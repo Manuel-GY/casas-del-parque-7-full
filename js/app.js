@@ -69,7 +69,9 @@
 
   function showLoading(wrapId) {
     var wrap = document.getElementById(wrapId);
-    if (wrap) wrap.innerHTML = '<p class="hint">Cargando...</p>';
+    if (!wrap) return;
+    var sk = '<div class="skeleton-card"><div class="skeleton-line title"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>';
+    wrap.innerHTML = sk + sk + sk;
   }
 
   function uid() {
@@ -94,21 +96,36 @@
    * Resuelve las URLs firmadas de las fotos y las asigna a las imagenes.
    * Se llama despues de cada render con fotos.
    */
-  function hidratarFotos(scope) {
+  async function hidratarFotos(scope) {
     if (!scope || !SB.client) return;
-    var imgs = scope.querySelectorAll(".foto-thumb");
+    var imgs = scope.querySelectorAll(".foto-thumb[data-foto]");
+    if (!imgs.length) return;
+
+    var pathMap = {};
+    var paths = [];
     for (var i = 0; i < imgs.length; i++) {
-      (function (img) {
-        var path = img.getAttribute("data-foto");
-        if (!path) { img.style.display = "none"; return; }
-        SB.client.storage.from("reportes").createSignedUrl(path, 3600).then(function (r) {
-          if (!r.error && r.data && r.data.signedUrl) {
-            img.src = r.data.signedUrl;
-          } else {
-            img.style.display = "none";
-          }
-        });
-      })(imgs[i]);
+      var p = imgs[i].getAttribute("data-foto");
+      if (p) {
+        if (!pathMap[p]) {
+          pathMap[p] = [];
+          paths.push(p);
+        }
+        pathMap[p].push(imgs[i]);
+      } else {
+        imgs[i].style.display = "none";
+      }
+    }
+
+    if (!paths.length) return;
+    var res = await SB.client.storage.from("reportes").createSignedUrls(paths, 3600);
+    if (res && res.data && Array.isArray(res.data)) {
+      res.data.forEach(function (item) {
+        if (item && item.signedUrl && pathMap[item.path]) {
+          pathMap[item.path].forEach(function (img) {
+            img.src = item.signedUrl;
+          });
+        }
+      });
     }
   }
 
@@ -178,6 +195,12 @@
       t.classList.toggle("active", t.dataset.target === id);
     });
 
+    if (id === "sec-nuevo") {
+      setTimeout(function () { var inp = document.getElementById("recl-titulo"); if (inp) inp.focus(); }, 50);
+    }
+    if (id === "sec-sugerir") {
+      setTimeout(function () { var inp = document.getElementById("sug-titulo"); if (inp) inp.focus(); }, 50);
+    }
     if (id === "sec-mios") cargarMios();
     if (id === "sec-mias") cargarMias();
     if (id === "sec-novedades") abrirNovedades();
