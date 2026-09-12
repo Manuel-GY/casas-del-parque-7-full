@@ -163,11 +163,27 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--l
 
 .hint { font-size: 12px; color: var(--muted); margin: 0; font-weight: 600; }
 .msg {
-  border-radius: 12px; padding: 11px 14px; font-size: 13px; font-weight: 700;
-  margin-bottom: 14px; display: none;
+  position: fixed;
+  left: 50%;
+  bottom: 90px;
+  transform: translateX(-50%);
+  z-index: 9999;
+  border-radius: 14px;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  max-width: min(92vw, 440px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .22);
+  display: none;
+  animation: msg-pop .22s ease;
 }
 .msg.error { display: block; background: #fef2f2; color: #b91c1c; border: 2px solid #fecaca; }
-.msg.ok { display: block; background: #f0fdf4; color: #15803d; border: 2px solid #bbf7d0; }
+.msg.ok { display: block; background: #14532d; color: #fff; border: 0; }
+@keyframes msg-pop {
+  from { opacity: 0; transform: translate(-50%, 10px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
 
 /* ---------- App ---------- */
 .hidden { display: none !important; }

@@ -82,6 +82,10 @@
     if (!m) return;
     m.textContent = text || "";
     m.className = "msg " + (tipo || "error");
+    if (m._toastTimer) clearTimeout(m._toastTimer);
+    if (!text) { m.style.display = "none"; return; }
+    m.style.display = "";
+    m._toastTimer = setTimeout(function () { m.style.display = "none"; }, 4500);
   }
 
   /**
