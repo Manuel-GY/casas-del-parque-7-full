@@ -509,14 +509,13 @@
       vincularNovedades();
 
       await definirNav();
-      await cargarResumen();
-
       vistoHasta = profile.ultimo_acceso || null;
-      try {
-        await actualizarNovedades();
-      } catch (eNov) {
-        if (window.console) console.warn("No se pudieron actualizar novedades:", eNov);
-      }
+      await Promise.all([
+        cargarResumen(),
+        actualizarNovedades().catch(function (eNov) {
+          if (window.console) console.warn("No se pudieron actualizar novedades:", eNov);
+        })
+      ]);
 
       if (pollTimer) clearInterval(pollTimer);
       pollTimer = setInterval(function () {

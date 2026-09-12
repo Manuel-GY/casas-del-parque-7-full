@@ -91,7 +91,7 @@
         }
         SBH.mostrar("msg", "¡Inicio de sesión exitoso! Bienvenido de nuevo.", "ok");
         completarRegistroPendiente().then(function () {
-          setTimeout(function () { window.location.href = "app.html"; }, 1000);
+          setTimeout(function () { window.location.href = "app.html"; }, 100);
         });
       });
   }
@@ -145,7 +145,7 @@
         cargando(btn, false, "Crear cuenta");
         if (res.data && res.data.session) {
           SBH.mostrar("msg", "¡Bienvenido a tu comunidad! Redirigiendo...", "ok");
-          setTimeout(function () { window.location.href = "app.html"; }, 1000);
+          setTimeout(function () { window.location.href = "app.html"; }, 100);
         } else {
           SBH.mostrar("msg", "Te enviamos un correo a " + email + ". Confírmalo y luego inicia sesión.", "ok");
         }
