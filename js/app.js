@@ -443,68 +443,91 @@
   }
 
   async function boot() {
-    if (!SB.configOk) {
-      SBH.mostrar("msg", "Falta configurar config.js (URL y anon key de tu proyecto Supabase).", "error");
-      return;
+    try {
+      if (!SB.configOk) {
+        SBH.mostrar("msg", "Falta configurar config.js (URL y anon key de tu proyecto Supabase).", "error");
+        var appMain = document.getElementById("app-main");
+        if (appMain) appMain.classList.remove("hidden");
+        return;
+      }
+      var gu = await SB.client.auth.getUser();
+      user = (gu && gu.data && gu.data.user) ? gu.data.user : null;
+      if (!user) { window.location.href = "index.html"; return; }
+
+      var gp = await SB.client.from("profiles").select("*").eq("id", user.id).maybeSingle();
+      if (gp && gp.error) {
+        SBH.mostrar("msg", SBH.fmtErr(gp.error.message), "error");
+        var appMain = document.getElementById("app-main");
+        if (appMain) appMain.classList.remove("hidden");
+        return;
+      }
+
+      if (!gp || !gp.data) {
+        var profEl = document.getElementById("profiling");
+        if (profEl) profEl.classList.remove("hidden");
+        SBH.llenarCasas(document.getElementById("prof-casa"));
+        return;
+      }
+
+      profile = gp.data;
+      rol = profile.rol || "vecino";
+
+      var elNombre = document.getElementById("user-nombre");
+      if (elNombre) elNombre.textContent = profile.nombre || "Vecino";
+
+      var elCasa = document.getElementById("user-casa");
+      if (elCasa) elCasa.textContent = profile.numero_casa ? "Casa " + profile.numero_casa : "Sin casa";
+
+      var rl = document.getElementById("user-rol");
+      if (rl) {
+        rl.textContent = rol === "comite" ? "Comité" : rol === "admin" ? "Admin" : "Vecino";
+        rl.className = "badge role-" + rol;
+      }
+
+      var primer = String(profile.nombre || "Vecino").split(" ")[0];
+      var elWelcome = document.getElementById("welcome-tx");
+      if (elWelcome) {
+        elWelcome.innerHTML = '¡Hola, ' + SBH.esc(primer) + '! <span style="color:var(--sun-dark)">☀</span>';
+      }
+
+      if (requiereCambioPass(user, profile)) {
+        var mainEl = document.getElementById("app-main");
+        var passEl = document.getElementById("card-cambiar-pass");
+        if (mainEl) mainEl.classList.add("hidden");
+        if (passEl) passEl.classList.remove("hidden");
+        SBH.mostrar("msg", "Por seguridad y transparencia, debes cambiar tu contraseña por defecto antes de continuar.", "error");
+        return;
+      }
+
+      var cardPass = document.getElementById("card-cambiar-pass");
+      var appMain = document.getElementById("app-main");
+      if (cardPass) cardPass.classList.add("hidden");
+      if (appMain) appMain.classList.remove("hidden");
+
+      llenarReclamoForm();
+      llenarSugerenciaForm();
+      vincularNovedades();
+
+      await definirNav();
+      await cargarResumen();
+
+      vistoHasta = profile.ultimo_acceso || null;
+      try {
+        await actualizarNovedades();
+      } catch (eNov) {
+        if (window.console) console.warn("No se pudieron actualizar novedades:", eNov);
+      }
+
+      if (pollTimer) clearInterval(pollTimer);
+      pollTimer = setInterval(function () {
+        if (SB.configOk && document.visibilityState === "visible") actualizarNovedades();
+      }, 60000);
+    } catch (err) {
+      if (window.console) console.error("Error al iniciar panel de la app:", err);
+      var appMain = document.getElementById("app-main");
+      if (appMain) appMain.classList.remove("hidden");
+      SBH.mostrar("msg", "Ocurrió un error al cargar la aplicación. Por favor recarga la página.", "error");
     }
-    var gu = await SB.client.auth.getUser();
-    user = gu.data.user || null;
-    if (!user) { window.location.href = "index.html"; return; }
-
-    var gp = await SB.client.from("profiles").select("*").eq("id", user.id).maybeSingle();
-    if (gp.error && !gp.data) {
-      SBH.mostrar("msg", SBH.fmtErr(gp.error.message), "error");
-      return;
-    }
-
-    if (!gp.data) {
-      document.getElementById("profiling").classList.remove("hidden");
-      SBH.llenarCasas(document.getElementById("prof-casa"));
-      return;
-    }
-
-    profile = gp.data;
-    rol = profile.rol;
-
-    document.getElementById("user-nombre").textContent = profile.nombre;
-    document.getElementById("user-casa").textContent = profile.numero_casa ? "Casa " + profile.numero_casa : "Sin casa";
-    var rl = document.getElementById("user-rol");
-    rl.textContent = rol === "comite" ? "Comité" : rol === "admin" ? "Admin" : "Vecino";
-    rl.className = "badge role-" + rol;
-
-    var primer = String(profile.nombre).split(" ")[0];
-    document.getElementById("welcome-tx").innerHTML =
-      "¡Hola, " + SBH.esc(primer) + '! <span style="color:var(--sun-dark)">☀</span>';
-
-    if (requiereCambioPass(user, profile)) {
-      document.getElementById("app-main").classList.add("hidden");
-      document.getElementById("card-cambiar-pass").classList.remove("hidden");
-      SBH.mostrar("msg", "Por seguridad y transparencia, debes cambiar tu contraseña por defecto antes de continuar.", "error");
-      return;
-    }
-
-    document.getElementById("card-cambiar-pass").classList.add("hidden");
-    document.getElementById("app-main").classList.remove("hidden");
-
-    llenarReclamoForm();
-    llenarSugerenciaForm();
-    vincularNovedades();
-
-    await definirNav();
-    cargarResumen();
-
-    // Novedades: contar contra el último acceso conocido. No se marca como
-    // leído aquí: eso ocurre al abrir la campana, para que las novedades sí
-    // se muestren cuando el usuario entra (antes se avanzaba el baseline y la
-    // lista salía vacía aunque la campana marcara un contador).
-    vistoHasta = profile.ultimo_acceso || null;
-    await actualizarNovedades();
-
-    // Poll en vivo (cada 60 s) para detectar respuestas mientras la app está abierta
-    if (pollTimer) clearInterval(pollTimer);
-    pollTimer = setInterval(function () {
-      if (SB.configOk && document.visibilityState === "visible") actualizarNovedades();
-    }, 60000);
   }
 
   function requiereCambioPass(u, p) {
