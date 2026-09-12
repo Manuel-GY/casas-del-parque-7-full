@@ -59,6 +59,7 @@
    */
   function fmtErr(m) {
     var s = String((m == null) ? "" : m);
+    if (!s) return "";
     if (/could not find the function|schema cache/i.test(s))
       return "La base de datos no está actualizada. Ejecuta el sql/schema.sql completo en el SQL Editor de Supabase.";
     if (/failed to fetch|networkerror|load failed|fetch failed|timeout/i.test(s))
@@ -67,17 +68,17 @@
       return "Ese correo ya está registrado. Prueba iniciando sesión.";
     if (/email not confirmed|email not verified/i.test(s))
       return "Correo no confirmado. Revisa tu correo y haz clic en el enlace de confirmación para activar tu cuenta.";
-    if (/invalid login credentials|invalid email or password/i.test(s))
+    if (/invalid login credentials|invalid email or password|user not found/i.test(s))
       return "Correo o contraseña incorrectos.";
     if (/Demasiados intentos/i.test(s))
       return "Demasiados intentos de registro con este correo. Espera una hora e inténtalo de nuevo.";
-    if (/too many (requests|attempts)|rate limit|429/i.test(s))
+    if (/too many (requests|attempts)|rate limit|429|email rate limit/i.test(s))
       return "Demasiadas solicitudes en poco tiempo. Espera un momento y vuelve a intentarlo.";
-    if (/jwt expired|invalid jwt|token has expired|not authorized|signed out/i.test(s))
-      return "Tu sesión expiró. Vuelve a iniciar sesión.";
+    if (/jwt expired|invalid jwt|token has expired|not authorized|signed out|session missing|invalid refresh token/i.test(s))
+      return "Tu sesión expiró o no es válida. Vuelve a iniciar sesión.";
     if (/new password should be different|different from the old|same as (the )?old password/i.test(s))
       return "La nueva contraseña debe ser diferente a la contraseña anterior.";
-    if (/password should be at least/i.test(s))
+    if (/password should be at least|password is too short/i.test(s))
       return "La contraseña debe tener al menos 6 caracteres.";
     if (/weak password/i.test(s))
       return "La contraseña ingresada es demasiado débil.";
@@ -89,8 +90,26 @@
       return "El nombre debe tener entre 1 y 120 caracteres.";
     if (/violates check constraint/i.test(s))
       return "Los datos ingresados no cumplen con los límites de longitud requeridos (mínimo 10 caracteres en la descripción).";
-    if (/violates row-level security policy/i.test(s))
+    if (/violates row-level security policy|permission denied|access denied|unauthorized/i.test(s))
       return "No tienes permisos para realizar esta acción.";
+    if (/duplicate key.*unique constraint/i.test(s))
+      return "Ya existe un registro con esos mismos datos.";
+    if (/null value in column.*not-null constraint/i.test(s))
+      return "Por favor, completa todos los campos obligatorios.";
+    if (/payload too large|file size|object too large/i.test(s))
+      return "El archivo adjunto supera el tamaño máximo permitido (5 MB).";
+    if (/mime type|file type|not allowed/i.test(s))
+      return "Formato de archivo no válido. Sube una imagen (JPG, PNG, WebP).";
+    if (/for security purposes.*once every/i.test(s))
+      return "Por seguridad, solo puedes realizar esta acción una vez por minuto. Espera un momento.";
+    if (/signup.*disabled|signups not allowed/i.test(s))
+      return "El registro de nuevos usuarios no está disponible en este momento.";
+    if (/bad request/i.test(s))
+      return "Solicitud no válida. Revisa los datos e inténtalo de nuevo.";
+    if (/not found|404|pgrst116/i.test(s))
+      return "No se encontró el elemento solicitado.";
+    if (/AuthApiError|PostgrestError|StorageApiError|error|failed|invalid|cannot|unable/i.test(s))
+      return "Ocurrió un error al procesar la solicitud. Inténtalo de nuevo.";
     return s;
   }
 
