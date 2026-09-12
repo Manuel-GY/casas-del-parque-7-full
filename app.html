@@ -69,7 +69,7 @@
     <div id="card-cambiar-pass" class="card hidden">
       <h2>🔒 Cambio de contraseña obligatorio</h2>
       <p class="sub">Por motivos de seguridad y transparencia, debes actualizar la contraseña por defecto antes de continuar.</p>
-      <form id="form-cambiar-pass" class="grid-2">
+      <form id="form-cambiar-pass" class="grid-2" novalidate>
         <label>Nueva contraseña (mínimo 6 caracteres)
           <input type="password" id="pass-nueva" required minlength="6" autocomplete="new-password">
         </label>
@@ -85,15 +85,15 @@
     <div id="profiling" class="card hidden">
       <h2>Completa tu registro</h2>
       <p class="sub">Tu cuenta ya existe, pero falta asociarla a tu casa. Máximo 2 usuarios por casa.</p>
-      <form id="profiling-form" class="grid-2">
+      <form id="profiling-form" class="grid-2" novalidate>
         <label>Nombre completo
           <input type="text" id="prof-name" required maxlength="120">
         </label>
         <label>Número de casa
           <select id="prof-casa" required></select>
         </label>
-        <div>
-          <button class="btn primary" type="submit">Guardar</button>
+        <div style="grid-column: 1 / -1;">
+          <button class="btn primary" type="submit">Guardar y continuar</button>
         </div>
       </form>
     </div>
@@ -135,7 +135,7 @@
         <div class="card">
           <h2>Reportar al condominio</h2>
           <p class="sub">Cuéntanos cualquier situación: seguridad, instalaciones, plazas, calles, luminarias, aseo, estacionamientos u otro tema de la comunidad.</p>
-          <form id="reclamo-form">
+          <form id="reclamo-form" novalidate>
             <label>Categoría
               <select id="recl-categoria" required></select>
             </label>
@@ -173,7 +173,7 @@
       <section id="sec-sugerir" hidden>
         <div class="card">
           <h2>Ingresar sugerencia</h2>
-          <form id="sugerencia-form">
+          <form id="sugerencia-form" novalidate>
             <label>Título de tu sugerencia
               <input type="text" id="sug-titulo" required minlength="3" maxlength="200">
               <span class="char-counter" id="cnt-sug-titulo">0 / 200</span>

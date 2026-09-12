@@ -52,7 +52,7 @@
       </div>
 
       <div id="view-login" class="view">
-        <form id="login-form" autocomplete="off">
+        <form id="login-form" autocomplete="off" novalidate>
           <label>Correo
             <input type="email" id="login-email" required>
           </label>
@@ -65,7 +65,7 @@
         <div id="forgot-box" class="card-flat" hidden>
           <h2 class="recovery-title">🔑 ¿Olvidaste tu contraseña?</h2>
           <p class="sub">Te enviaremos un correo para restablecerla.</p>
-          <form id="forgot-form" autocomplete="off">
+          <form id="forgot-form" autocomplete="off" novalidate>
             <label>Tu correo
               <input type="email" id="forgot-email" required>
             </label>
@@ -78,7 +78,7 @@
       </div>
 
       <div id="view-register" class="view" hidden>
-        <form id="register-form" autocomplete="off">
+        <form id="register-form" autocomplete="off" novalidate>
           <label>Nombre completo
             <input type="text" id="reg-name" required maxlength="120">
           </label>
@@ -102,7 +102,7 @@
         <div class="card-flat">
           <h2 class="recovery-title">🔑 Restablecer contraseña</h2>
           <p class="sub">Ingresa tu nueva contraseña para recuperar el acceso a tu comunidad.</p>
-          <form id="recovery-form" autocomplete="off">
+          <form id="recovery-form" autocomplete="off" novalidate>
             <label>Nueva contraseña
               <input type="password" id="recovery-pass" required minlength="6" autocomplete="new-password">
             </label>
