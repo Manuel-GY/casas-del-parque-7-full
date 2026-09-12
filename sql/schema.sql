@@ -677,38 +677,48 @@ $$;
 -- ============================================================
 -- Máximo 10 intentos de registro por hora y por correo.
 -- El registro sigue abierto; esto solo frena abuso automatizado.
-create or replace function auth.restringir_registro()
-returns trigger
-language plpgsql volatile
-set search_path = public, auth
-as $$
-declare
-  v_intentos integer;
+--
+-- NOTA: crear objetos en el schema auth exige permisos elevados.
+-- Si el rol del SQL Editor no los tiene (ERROR 42501), este bloque lo
+-- omite con un aviso y el resto del script continúa (el trigger ya
+-- existente de un despliegue anterior se conserva igual). Si la
+-- ejecución la haces con el rol `postgres`, se crea normalmente.
+do $bloquea_auth$
 begin
-  delete from public.intentos_registro where creado_en < now() - interval '1 hour';
+  create or replace function auth.restringir_registro()
+  returns trigger
+  language plpgsql volatile
+  set search_path = public, auth
+  as $$
+  declare
+    v_intentos integer;
+  begin
+    delete from public.intentos_registro where creado_en < now() - interval '1 hour';
 
-  select count(*) into v_intentos
-  from public.intentos_registro
-  where email = lower(new.email);
+    select count(*) into v_intentos
+    from public.intentos_registro
+    where email = lower(new.email);
 
-  if v_intentos >= 10 then
-    raise exception 'Demasiados intentos de registro con este correo. Espera una hora e inténtalo de nuevo.';
-  end if;
+    if v_intentos >= 10 then
+      raise exception 'Demasiados intentos de registro con este correo. Espera una hora e inténtalo de nuevo.';
+    end if;
 
-  insert into public.intentos_registro (email, creado_en)
-  values (lower(new.email), now());
+    insert into public.intentos_registro (email, creado_en)
+    values (lower(new.email), now());
 
-  return new;
+    return new;
+  end;
+  $$;
+
+  drop trigger if exists "restringir_registro_trg" on auth.users;
+  create trigger "restringir_registro_trg"
+    before insert on auth.users
+    for each row execute function auth.restringir_registro();
+exception
+  when insufficient_privilege then
+    raise notice 'Omitido: sin permiso en schema auth (42501). El límite anti-spam de registro no se creó/actualizó.';
 end;
-$$;
-
--- El trigger se crea con DROP IF EXISTS para ser idempotente.
--- Nota: en algunos planes de Supabase puede requerir permisos
--- elevados; si falla, ejecuta solo esta sección o contactar soporte.
-drop trigger if exists "restringir_registro_trg" on auth.users;
-create trigger "restringir_registro_trg"
-  before insert on auth.users
-  for each row execute function auth.restringir_registro();
+$bloquea_auth$;
 
 -- ============================================================
 -- 15) ROW LEVEL SECURITY (RLS)
