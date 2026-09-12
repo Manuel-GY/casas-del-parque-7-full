@@ -440,7 +440,6 @@
         mostrarSeccion("sec-sugerencias");
       });
     }
-    }
   }
 
   async function boot() {
