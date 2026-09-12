@@ -96,7 +96,7 @@
               <select id="recl-categoria" required></select>
             </label>
             <label>Título
-              <input type="text" id="recl-titulo" required minlength="3" maxlength="200" placeholder="Ej.: Luminaria apagada en calle Los Maitenes">
+              <input type="text" id="recl-titulo" required minlength="3" maxlength="200">
             </label>
             <label>Descripción
               <textarea id="recl-descripcion" required minlength="10" maxlength="2000" rows="5"></textarea>
@@ -104,9 +104,9 @@
             <div class="foto-upload">
               <label class="foto-btn" for="recl-fotos">
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                Adjuntar fotos (opcional, máx. 5)
+                Adjuntar foto (opcional, máx. 1)
               </label>
-              <input type="file" id="recl-fotos" accept="image/*" multiple hidden>
+              <input type="file" id="recl-fotos" accept="image/*" hidden>
               <p class="hint" id="recl-fotos-info"></p>
             </div>
             <div id="recl-fotos-preview" class="fotos-preview"></div>
@@ -128,7 +128,7 @@
           <h2>Ingresar sugerencia</h2>
           <form id="sugerencia-form">
             <label>Título de tu sugerencia
-              <input type="text" id="sug-titulo" required minlength="3" maxlength="200" placeholder="Ej.: Mejorar la iluminación de los pasillos">
+              <input type="text" id="sug-titulo" required minlength="3" maxlength="200">
             </label>
             <label>Detalle
               <textarea id="sug-descripcion" required minlength="10" maxlength="2000" rows="5"></textarea>
@@ -136,9 +136,9 @@
             <div class="foto-upload">
               <label class="foto-btn" for="sug-fotos">
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                Adjuntar fotos (opcional, máx. 5)
+                Adjuntar foto (opcional, máx. 1)
               </label>
-              <input type="file" id="sug-fotos" accept="image/*" multiple hidden>
+              <input type="file" id="sug-fotos" accept="image/*" hidden>
               <p class="hint" id="sug-fotos-info"></p>
             </div>
             <div id="sug-fotos-preview" class="fotos-preview"></div>

@@ -16,7 +16,7 @@ Plataforma web (**Serverless & Zero-Build**) desplegada en **Vercel** con backen
 | Casas | 142 | **146** |
 | Registro | Solo correos de un dominio | **Abierto a cualquier correo** (cualquiera con el link), con límite de 10 intentos/hora/correo |
 | Novedades | — | **Avisos y reportes recientes dentro de la app** (campana en el panel) |
-| Adjuntos | — | **Hasta 3 fotos por reporte o sugerencia** (bucket privado `reportes`) |
+| Adjuntos | — | **1 foto por reporte o sugerencia** (bucket privado `reportes`) |
 | Recuperar contraseña | — | **Enlace "¿Olvidaste tu contraseña?"** con email de respaldo |
 | Base de datos (Supabase) | Compartida con este repo | **Proyecto Supabase propio** |
 | Hospedaje | Vercel (`cdp7.vercel.app`) | Vercel (proyecto propio) |
@@ -28,7 +28,7 @@ Plataforma web (**Serverless & Zero-Build**) desplegada en **Vercel** con backen
 ### 🏡 Para Vecinos
 - **Registro Abierto**: cualquier persona con el link puede crear su cuenta verificando su correo; **máximo 2 vecinos por casa** (validado atómicamente en base de datos, evita que los 2 cupos se agoten a la vez).
 - **Reporte Comunitario**: selección de categoría de 8 áreas del condominio (seguridad, instalaciones, plazas, calles, luminarias, aseo, estacionamientos, otros).
-- **Fotos Adjuntas**: hasta **3 fotos** por reporte o sugerencia, subidas a un bucket privado protegido por RLS.
+- **Fotos Adjuntas**: **1 foto** por reporte o sugerencia, subida a un bucket privado protegido por RLS.
 - **Envío de Sugerencias**: propuestas para la mejora comunitaria.
 - **Historial Privado**: visualización exclusiva de sus propias solicitudes y de la respuesta del Comité / Administración.
 - **Estadísticas Comunitarias**: métricas anónimas agregadas por mes, categoría y estado, con exportación a Excel.
@@ -173,7 +173,7 @@ npm run icons
 - Registro **abierto** (sin restricción de dominio) con rate-limit de 10 intentos/hora/correo.
 - Recuperación de contraseña desde el login con enlace de respaldo.
 - Avisos in-app (campana + contador + pestaña de novedades), sin push.
-- Adjunto de hasta 3 fotos por reporte/sugerencia (bucket privado + RLS + URL firmadas).
+- Adjunto de **1 foto** por reporte/sugerencia (bucket privado + RLS + URL firmadas).
 - Acciones de archivo y borrado para administradores.
 - PWA instalable (manifest, service worker, iconos) y soporte offline del shell.
 - `vercel.json` con headers de seguridad (CSP, `nosniff`, `X-Frame-Options`, `Permissions-Policy`).

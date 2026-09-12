@@ -57,7 +57,7 @@
   /* ------------------------------------------------------------------ */
   var fotosRecl = [];        // File[] pendientes para el proximo reporte
   var fotosSug = [];         // File[] pendientes para la proxima sugerencia
-  var MAX_FOTOS = 5;
+  var MAX_FOTOS = 1;
 
   /* ------------------------------------------------------------------ */
   /*  Helpers                                                            */
@@ -470,7 +470,7 @@
     });
     if (info) {
       info.textContent = estado.length
-        ? estado.length + " de " + MAX_FOTOS + " fotos seleccionadas (clic para quitar)"
+        ? estado.length + " de " + MAX_FOTOS + (MAX_FOTOS === 1 ? " foto seleccionada (clic para quitar)" : " fotos seleccionadas (clic para quitar)")
         : "";
     }
   }
