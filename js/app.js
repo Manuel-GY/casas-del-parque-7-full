@@ -209,72 +209,20 @@
 
       if (vHero) {
         vHero.hidden = false;
-        if (!vHero.innerHTML.trim()) {
-          vHero.innerHTML =
-            '<div class="vecino-hero-header">' +
-              '<div>' +
-                '<div class="vecino-hero-title">' +
-                  '<h3>🏡 Tu Espacio Comunitario</h3>' +
-                  '<span class="vecino-badge">' + (profile.numero_casa ? "Casa " + profile.numero_casa : "Vecino") + '</span>' +
-                '</div>' +
-                '<div class="vecino-hero-sub">Reportes y sugerencias confidenciales del condominio</div>' +
-              '</div>' +
-              '<div class="vecino-privacy-tag">' +
-                '<span>🔒 Privacidad Activa</span>' +
-              '</div>' +
-            '</div>' +
-            '<div class="vecino-kpi-grid">' +
-              '<div class="vecino-kpi-card" id="btn-kpi-rec" style="cursor:pointer;" title="Ver mis reportes">' +
-                '<div class="vecino-kpi-top">' +
-                  '<div class="vecino-kpi-icon icon-rec">' +
-                    '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' +
-                  '</div>' +
-                  '<span class="vecino-kpi-pill process" id="vhero-rec-pill">...</span>' +
-                '</div>' +
-                '<div class="vecino-kpi-num" id="vhero-rec-num">...</div>' +
-                '<div class="vecino-kpi-lbl">Mis reportes</div>' +
-                '<div class="vecino-kpi-sub" id="vhero-rec-sub">Cargando datos...</div>' +
-              '</div>' +
+        var cBadge = document.getElementById("vhero-casa-badge");
+        if (cBadge) cBadge.textContent = profile.numero_casa ? "Casa " + profile.numero_casa : "Vecino";
 
-              '<div class="vecino-kpi-card" id="btn-kpi-sug" style="cursor:pointer;" title="Ver mis sugerencias">' +
-                '<div class="vecino-kpi-top">' +
-                  '<div class="vecino-kpi-icon icon-sug">' +
-                    '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>' +
-                  '</div>' +
-                  '<span class="vecino-kpi-pill voice">Tu voz cuenta</span>' +
-                '</div>' +
-                '<div class="vecino-kpi-num" id="vhero-sug-num">...</div>' +
-                '<div class="vecino-kpi-lbl">Mis sugerencias</div>' +
-                '<div class="vecino-kpi-sub" id="vhero-sug-sub">Cargando datos...</div>' +
-              '</div>' +
+        var bRec = document.getElementById("btn-quick-report");
+        if (bRec && !bRec._bound) { bRec._bound = true; bRec.addEventListener("click", function () { mostrarSeccion("sec-nuevo"); }); }
 
-              '<div class="vecino-kpi-card vecino-quick-actions">' +
-                '<div class="vecino-kpi-lbl" style="margin-bottom:8px;">Acciones rápidas</div>' +
-                '<div class="vecino-btn-group">' +
-                  '<button class="vecino-action-btn primary" id="btn-quick-report" type="button">' +
-                    '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>' +
-                    'Nuevo reporte' +
-                  '</button>' +
-                  '<button class="vecino-action-btn ghost" id="btn-quick-suggest" type="button">' +
-                    '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>' +
-                    'Sugerir' +
-                  '</button>' +
-                '</div>' +
-              '</div>' +
-            '</div>';
+        var bSug = document.getElementById("btn-quick-suggest");
+        if (bSug && !bSug._bound) { bSug._bound = true; bSug.addEventListener("click", function () { mostrarSeccion("sec-sugerir"); }); }
 
-          var bRec = document.getElementById("btn-quick-report");
-          if (bRec) bRec.addEventListener("click", function () { mostrarSeccion("sec-nuevo"); });
+        var kRec = document.getElementById("btn-kpi-rec");
+        if (kRec && !kRec._bound) { kRec._bound = true; kRec.addEventListener("click", function () { mostrarSeccion("sec-mios"); }); }
 
-          var bSug = document.getElementById("btn-quick-suggest");
-          if (bSug) bSug.addEventListener("click", function () { mostrarSeccion("sec-sugerir"); });
-
-          var kRec = document.getElementById("btn-kpi-rec");
-          if (kRec) kRec.addEventListener("click", function () { mostrarSeccion("sec-mios"); });
-
-          var kSug = document.getElementById("btn-kpi-sug");
-          if (kSug) kSug.addEventListener("click", function () { mostrarSeccion("sec-mias"); });
-        }
+        var kSug = document.getElementById("btn-kpi-sug");
+        if (kSug && !kSug._bound) { kSug._bound = true; kSug.addEventListener("click", function () { mostrarSeccion("sec-mias"); }); }
       }
 
       var res = await Promise.all([
