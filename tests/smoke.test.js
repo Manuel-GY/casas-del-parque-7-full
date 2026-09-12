@@ -26,7 +26,7 @@ test("todos los archivos referenciados existen", () => {
   const refs = [
     "./index.html", "./app.html", "./manifest.webmanifest", "./sw.js",
     "./css/style.css", "./js/pure.js", "./js/auth.js", "./js/index.js",
-    "./js/app.js", "./js/stats.js", "./js/register-sw.js",
+    "./js/app.js", "./js/stats.js", "./js/register-sw.js", "./js/supabase.min.js",
     "./icons/icon-192.png", "./icons/icon-512.png", "./icons/icon-180.png",
     "./icons/icon-maskable-512.png", "./config.example.js"
   ];
@@ -46,7 +46,6 @@ test("los scripts del HTML existen y en el orden correcto", () => {
     assert.ok(ordenOk, `${page}: pure.js debe ir antes de auth.js`);
     assert.ok(authAntesDeFinal, `${page}: auth.js debe cargarse antes del script final`);
     for (const s of scripts) {
-      if (s.startsWith("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2")) continue;
       assert.ok(fs.existsSync(path.join(ROOT, s)), `${page}: falta script ${s}`);
     }
   }

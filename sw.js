@@ -9,7 +9,7 @@
  */
 "use strict";
 
-var VERSION = "cdp7-v2.0.4";
+var VERSION = "cdp7-v2.0.5";
 
 var APP_SHELL = [
   "./",
@@ -19,6 +19,7 @@ var APP_SHELL = [
   "./css/style.css",
   "./js/pure.js",
   "./js/auth.js",
+  "./js/supabase.min.js",
   "./js/index.js",
   "./js/app.js",
   "./js/stats.js",

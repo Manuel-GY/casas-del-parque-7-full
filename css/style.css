@@ -1,5 +1,21 @@
 @import url("https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;600;700;800&display=swap");
 
+/* ==================================================================
+ * style.css - Hoja de estilos principal de Casas del Parque 7.
+ *
+ * Orden de secciones:
+ *   1) Variables y tema (paleta)     5) Tarjetas y reclamos
+ *   2) Autenticacion (login/registro) 6) Estadisticas y usuarios
+ *   3) Botones, mensajes y badges     7) Footer y modal de privacidad
+ *   4) Topbar / navegacion            8) Adjuntos de fotos
+ *
+ * NOTA sobre las fuentes: venir de Google Fonts via @import (Baloo 2 para
+ * numeros grandes, Nunito para el texto). Por eso el CSP (vercel.json y el
+ * <meta http-equiv="Content-Security-Policy"> del HTML) permite
+ * style-src https://fonts.googleapis.com y font-src https://fonts.gstatic.com.
+ * Si se eliminan las fuentes de Google, limpiar tambien esos origenes del CSP.
+ * ================================================================== */
+
 :root {
   --sun: #fbbf24;
   --sun-dark: #d97706;
@@ -49,6 +65,9 @@ body::before {
 h1, h2, .app-name, .logo { font-family: "Baloo 2", "Nunito", sans-serif; }
 
 /* ---------- Login / Registro ---------- */
+/* ------------------------------------------------------------------
+ * Autenticacion: pagina, tarjeta y formularios (login/registro/recovery)
+ * ------------------------------------------------------------------ */
 .auth-page {
   min-height: 100vh;
   display: flex;
@@ -124,6 +143,9 @@ input, select, textarea {
 }
 input:focus, select:focus, textarea:focus { outline: none; border-color: var(--leaf); }
 
+/* ------------------------------------------------------------------
+ * Componentes base: botones, spinner, pistas, badge de cupos y toasts
+ * ------------------------------------------------------------------ */
 .btn {
   border: 0;
   border-radius: 13px;
@@ -199,6 +221,9 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--l
 /* ---------- App ---------- */
 .hidden { display: none !important; }
 
+/* ------------------------------------------------------------------
+ * Topbar fija y navegacion (pestanas del panel)
+ * ------------------------------------------------------------------ */
 .topbar {
   background: rgba(255, 255, 255, .9);
   backdrop-filter: blur(10px);
@@ -230,6 +255,9 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--l
 
 .container { max-width: 980px; margin: 0 auto; padding: 24px 20px 60px; position: relative; z-index: 1; }
 
+/* ------------------------------------------------------------------
+ * Tarjetas: welcome, tarjetas de reclamos/sugerencias, chips y stats
+ * ------------------------------------------------------------------ */
 .welcome {
   text-align: center;
   margin-bottom: 22px;
@@ -440,6 +468,9 @@ canvas { width: 100%; max-width: 100%; display: block; border-radius: 12px; }
   box-shadow: var(--shadow-soft);
 }
 
+/* ------------------------------------------------------------------
+ * Gestion de usuarios (vista solo admin)
+ * ------------------------------------------------------------------ */
 .user-row {
   display: flex; align-items: center; justify-content: space-between;
   gap: 10px; flex-wrap: wrap;
@@ -484,6 +515,9 @@ footer.site {
 }
 
 /* ---------- Privacy Modal & Badges ---------- */
+/* ------------------------------------------------------------------
+ * Footer: enlace de privacidad, nota informativa
+ * ------------------------------------------------------------------ */
 .privacy-link {
   color: var(--muted);
   font-weight: 700;
@@ -519,6 +553,9 @@ footer.site {
 }
 .privacy-inline a:hover { color: var(--forest); }
 
+/* ------------------------------------------------------------------
+ * Modal de politica de privacidad
+ * ------------------------------------------------------------------ */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -619,6 +656,9 @@ footer.site {
 }
 
 /* ---------- Fotos adjuntas ---------- */
+/* ------------------------------------------------------------------
+ * Adjuntos: picker de foto, miniaturas y botones de administracion
+ * ------------------------------------------------------------------ */
 .foto-upload { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .foto-btn {
   display: inline-flex;

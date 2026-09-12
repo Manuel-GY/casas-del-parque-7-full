@@ -62,7 +62,10 @@ Plataforma web (**Serverless & Zero-Build**) desplegada en **Vercel** con backen
 - **Registro protegido**: trigger sobre `auth.users` que limita a **10 intentos de registro por hora por correo** (tabla `intentos_registro`).
 - **Cupo atómico**: la función `registrar_perfil` reserva una de las 2 plazas por casa con un bloqueo de asesoría de PostgreSQL, evitando dobles asignaciones bajo concurrencia.
 - **Adjuntos privados**: las fotos viven en el bucket `reportes` (acceso `private`), solo los autores y `admin`/`comite` pueden verlas; los enlaces firmados expiran.
+- **Subida restringida**: la política de storage solo acepta **imágenes** (`mimetype image/*`) de hasta **5 MB**, en la carpeta del usuario autenticado.
 - **Foto liberada al resolver**: al marcar un reporte o sugerencia como **Resuelto/Resuelta** se elimina la foto del bucket `reportes` (el reporte sigue contando en las estadísticas). La acción es **irreversible**.
+- **Exportación CSV segura**: la descarga neutraliza la inyección de fórmulas (`=`, `+`, `-`, `@`) para que Excel/Sheets no ejecuten contenido como fórmula.
+- **Scripts locales + CSP**: supabase-js se sirve desde `js/supabase.min.js` (sin CDN externo) y las páginas llevan un **Content-Security-Policy** por `<meta>` (GitHub Pages no permite headers personalizados; `vercel.json` lo aplica si se despliega en Vercel).
 
 ---
 
@@ -153,6 +156,7 @@ npm run icons
 ├── config.example.js    Plantilla de config sin credenciales
 ├── css/style.css        Sistema de diseño, glassmorphism, responsive y Bottom Navigation Bar
 ├── js/pure.js           Helpers puros (sin DOM) y testeables con Node
+├── js/supabase.min.js   SDK de Supabase (self-hosted, sin CDN externo)
 ├── js/auth.js           Cliente Supabase, catálogo de categorías, traducción de errores y modal
 ├── js/index.js          Lógica de autenticación y recuperación de contraseña
 ├── js/app.js            Panel dinámico, novedades, fotos, validaciones y exportación CSV

@@ -3,6 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!--
+    CSP por meta (no header): GitHub Pages no permite headers personalizados,
+    asi que esta etiqueta replica el Content-Security-Policy de vercel.json
+    (que si aplica si la app se despliega en Vercel). 'unsafe-inline' en
+    style-src es necesario por los atributos style= generados en el JS.
+  -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.supabase.co; object-src 'none'; manifest-src 'self'; base-uri 'self'; form-action 'self'">
   <meta name="theme-color" content="#14532d">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -15,6 +22,11 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+  <!--
+    index.html - Pantalla de login / registro / recuperacion.
+    Tres vistas (view-login, view-register, view-recovery) alternadas desde
+    js/index.js. No usa script inline: todo vive en js/*.js (compatible CSP).
+  -->
   <div class="auth-page">
     <div class="auth-card">
       <div class="brand">
@@ -133,7 +145,7 @@
   </div>
 
   <script src="./config.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="./js/supabase.min.js"></script>
   <script src="./js/pure.js"></script>
   <script src="./js/auth.js"></script>
   <script src="./js/register-sw.js"></script>
