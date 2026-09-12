@@ -88,8 +88,52 @@
     var arr = fotos || [];
     if (!arr.length) return "";
     return '<div class="fotos-row">' + arr.map(function (f) {
-      return '<img class="foto-thumb" data-foto="' + SBH.esc(f) + '" alt="Foto adjunta" loading="lazy">';
+      return '<div class="foto-item">' +
+        '<img class="foto-thumb" data-foto="' + SBH.esc(f) + '" alt="Foto adjunta" loading="lazy" title="Haz clic para ampliar">' +
+        '<button type="button" class="btn-ampliar-foto" data-foto-btn="' + SBH.esc(f) + '">🔍 Ampliar foto</button>' +
+      '</div>';
     }).join("") + "</div>";
+  }
+
+  function abrirFotoModal(src) {
+    var modal = document.getElementById("modal-foto");
+    var imgFull = document.getElementById("img-modal-full");
+    var btnDownload = document.getElementById("btn-download-foto");
+    if (!modal || !imgFull) return;
+
+    imgFull.src = src;
+    if (btnDownload) {
+      btnDownload.href = src;
+    }
+    modal.classList.remove("hidden");
+    modal.setAttribute("aria-hidden", "false");
+  }
+
+  function cerrarFotoModal() {
+    var modal = document.getElementById("modal-foto");
+    if (!modal) return;
+    modal.classList.add("hidden");
+    modal.setAttribute("aria-hidden", "true");
+  }
+
+  function vincularFotoModal() {
+    var modal = document.getElementById("modal-foto");
+    var btnClose = document.getElementById("btn-close-foto");
+    var btnCerrar = document.getElementById("btn-cerrar-foto-modal");
+    if (!modal) return;
+
+    if (btnClose) btnClose.addEventListener("click", cerrarFotoModal);
+    if (btnCerrar) btnCerrar.addEventListener("click", cerrarFotoModal);
+
+    modal.addEventListener("click", function (e) {
+      if (e.target === modal) cerrarFotoModal();
+    });
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && !modal.classList.contains("hidden")) {
+        cerrarFotoModal();
+      }
+    });
   }
 
   /**
@@ -123,10 +167,28 @@
         if (item && item.signedUrl && pathMap[item.path]) {
           pathMap[item.path].forEach(function (img) {
             img.src = item.signedUrl;
+            img.setAttribute("data-full-url", item.signedUrl);
+
+            var itemParent = img.closest(".foto-item");
+            if (itemParent) {
+              var btn = itemParent.querySelector(".btn-ampliar-foto");
+              if (btn) btn.setAttribute("data-full-url", item.signedUrl);
+            }
           });
         }
       });
     }
+
+    scope.querySelectorAll(".foto-thumb, .btn-ampliar-foto").forEach(function (el) {
+      if (!el._modalBound) {
+        el._modalBound = true;
+        el.addEventListener("click", function (e) {
+          e.preventDefault();
+          var url = el.getAttribute("data-full-url") || el.src;
+          if (url) abrirFotoModal(url);
+        });
+      }
+    });
   }
 
   /**
@@ -551,6 +613,7 @@
       llenarReclamoForm();
       llenarSugerenciaForm();
       vincularNovedades();
+      vincularFotoModal();
 
       await definirNav();
       vistoHasta = profile.ultimo_acceso || null;

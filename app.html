@@ -350,6 +350,26 @@
     </div>
   </div>
 
+  <div id="modal-foto" class="modal-overlay hidden" aria-hidden="true">
+    <div class="modal-card modal-card-foto">
+      <div class="modal-head">
+        <h2>📷 Fotograf&iacute;a Adjunta</h2>
+        <button class="modal-close" id="btn-close-foto" type="button" aria-label="Cerrar">&times;</button>
+      </div>
+      <div class="modal-body modal-body-foto" style="text-align: center; padding: 18px;">
+        <div style="max-height: 65vh; overflow: auto; margin-bottom: 16px; border-radius: 12px; background: #f8fafc; display: flex; align-items: center; justify-content: center; padding: 8px;">
+          <img id="img-modal-full" src="" alt="Fotografía en tamaño completo" style="max-width: 100%; max-height: 60vh; width: auto; height: auto; border-radius: 8px; box-shadow: 0 4px 14px rgba(0,0,0,0.15); object-fit: contain;">
+        </div>
+        <div style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
+          <a id="btn-download-foto" href="#" target="_blank" download="foto-reporte.jpg" class="btn primary sm" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+            <span>📥 Descargar foto</span>
+          </a>
+          <button id="btn-cerrar-foto-modal" type="button" class="btn ghost sm">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="./config.js"></script>
   <script src="./js/supabase.min.js"></script>
   <script src="./js/pure.js"></script>
