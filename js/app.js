@@ -1547,12 +1547,26 @@
       var cnt = document.getElementById(countId);
       if (!inp || !cnt) return;
       function update() {
-        var len = inp.value.length;
-        cnt.textContent = len + " / " + maxLen + (minLen ? " (mínimo " + minLen + " caracteres)" : "");
-        cnt.classList.toggle("ok", minLen ? len >= minLen : len > 0);
-        cnt.classList.toggle("warn", minLen ? (len > 0 && len < minLen) : false);
+        var val = inp.value;
+        var trimLen = val.trim().length;
+        var rawLen = val.length;
+        var displayLen = trimLen;
+
+        var text = displayLen + " " + (displayLen === 1 ? "carácter escrito" : "caracteres escritos");
+        if (minLen && maxLen) {
+          text += " (mínimo " + minLen + ", máx. " + maxLen + ")";
+        } else if (maxLen) {
+          text += " (máx. " + maxLen + ")";
+        }
+        cnt.textContent = text;
+
+        var isOk = minLen ? displayLen >= minLen : displayLen > 0;
+        cnt.classList.toggle("ok", isOk);
+        cnt.classList.toggle("warn", !isOk && rawLen > 0);
       }
-      inp.addEventListener("input", update);
+      ["input", "keyup", "keydown", "change", "paste", "focus", "blur"].forEach(function (evt) {
+        inp.addEventListener(evt, update);
+      });
       update();
     }
 
