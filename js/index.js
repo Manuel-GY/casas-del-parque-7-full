@@ -90,7 +90,9 @@
           return null;
         }
         SBH.mostrar("msg", "¡Inicio de sesión exitoso! Bienvenido de nuevo.", "ok");
-        setTimeout(function () { window.location.href = "app.html"; }, 1000);
+        completarRegistroPendiente().then(function () {
+          setTimeout(function () { window.location.href = "app.html"; }, 1000);
+        });
       });
   }
 
@@ -106,7 +108,11 @@
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { SBH.mostrar("msg", "Revisa el correo: parece no ser válido.", "error"); return; }
 
     cargando(btn, true, "Creando cuenta...");
-    SB.client.auth.signUp({ email: email, password: pass })
+    SB.client.auth.signUp({
+      email: email,
+      password: pass,
+      options: { emailRedirectTo: window.location.origin + window.location.pathname }
+    })
       .then(function (res) {
         if (res.error) {
           cargando(btn, false, "Crear cuenta");
@@ -118,6 +124,11 @@
           return null;
         }
         if (!res.data || !res.data.session) {
+          // Email confirmation activo: guardar el registro pendiente para
+          // completarlo (asociar casa) cuando el correo sea confirmado.
+          try {
+            localStorage.setItem("cdp7_registro", JSON.stringify({ nombre: nombre, casa: casa, email: email }));
+          } catch (e) {}
           return res;
         }
         return SB.client.rpc("registrar_perfil", { p_nombre: nombre, p_casa: casa, p_rol: "vecino" })
@@ -221,6 +232,29 @@
     return "Falta conectar Supabase: pega la URL y la anon key de tu proyecto nuevo en config.js.";
   }
 
+  /**
+   * Completa un registro que quedó pendiente por la confirmación de correo:
+   * llama a registrar_perfil (asocia casa + crea perfil) y limpia localStorage.
+   * @returns {Promise}
+   */
+  function completarRegistroPendiente() {
+    var raw = null;
+    try { raw = localStorage.getItem("cdp7_registro"); } catch (e) {}
+    if (!raw) return Promise.resolve();
+    var pend = null;
+    try { pend = JSON.parse(raw); } catch (e) { return Promise.resolve(); }
+    var ses = SB.client.auth.getSession();
+    var usr = ses && ses.data && ses.data.session ? ses.data.session.user : null;
+    if (!usr || !pend.email || pend.email !== usr.email) return Promise.resolve();
+    return SB.client.rpc("registrar_perfil", { p_nombre: pend.nombre, p_casa: pend.casa, p_rol: "vecino" })
+      .then(function (pr) {
+        try { localStorage.removeItem("cdp7_registro"); } catch (e) {}
+        if (pr.error) {
+          SBH.mostrar("msg", "Tu correo quedó confirmado, pero faltó asociar tu casa: " + SBH.fmtErr(pr.error.message), "error");
+        }
+      });
+  }
+
   /* ------------------------------------------------------------------ */
   /*  Inicializacion al cargar el DOM                                   */
   /* ------------------------------------------------------------------ */
@@ -271,7 +305,17 @@
     // Anticipar el modo recuperacion si la sesion ya trae el token
     if (SB.configOk) {
       SB.client.auth.onAuthStateChange(function (event) {
-        if (event === "PASSWORD_RECOVERY") activarModoRecuperacion();
+        if (event === "PASSWORD_RECOVERY") {
+          activarModoRecuperacion();
+          return;
+        }
+        if (event === "SIGNED_IN") {
+          // Llegada desde el correo de confirmación (solo si no es recovery)
+          if (/type=recovery/i.test(window.location.hash || "")) return;
+          completarRegistroPendiente().then(function () {
+            window.location.href = "app.html";
+          });
+        }
       });
     }
   });
