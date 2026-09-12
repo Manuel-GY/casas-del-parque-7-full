@@ -682,7 +682,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--l
 
 .vecino-kpi-pill.process { background: rgba(251, 191, 36, 0.25); color: #fbbf24; }
 .vecino-kpi-pill.ok { background: rgba(34, 197, 94, 0.3); color: #86efac; }
-.vecino-kpi-pill.voice { background: rgba(147, 197, 253, 0.25); color: #93c5fd; }
+.vecino-kpi-pill.voice { background: rgba(234, 88, 12, 0.4); color: #ffffff; border: 1px solid rgba(253, 186, 116, 0.5); }
 
 .vecino-quick-actions {
   display: flex;
