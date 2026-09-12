@@ -115,7 +115,12 @@
             <span class="rb-item" data-rb="sug-cerrada">·</span>
           </div>
         </div>
-        <div id="admin-hero-banner" class="admin-hero-banner" hidden></div>
+        <div id="admin-hero-banner" class="admin-hero-banner" hidden>
+          <div id="btn-kpi-admin-nuevos" hidden></div>
+          <div id="btn-kpi-admin-proceso" hidden></div>
+          <div id="btn-kpi-admin-resueltos" hidden></div>
+          <div id="btn-kpi-admin-sug" hidden></div>
+        </div>
         <div id="vecino-hero-banner" class="vecino-hero-banner" hidden>
           <div id="btn-kpi-rec" hidden></div>
           <div id="btn-kpi-sug" hidden></div>
@@ -136,9 +141,11 @@
             </label>
             <label>Título
               <input type="text" id="recl-titulo" required minlength="3" maxlength="200">
+              <span class="char-counter" id="cnt-recl-titulo">0 / 200</span>
             </label>
             <label>Descripción
               <textarea id="recl-descripcion" required minlength="10" maxlength="2000" rows="5"></textarea>
+              <span class="char-counter" id="cnt-recl-desc">0 / 2000 (mínimo 10)</span>
             </label>
             <div class="foto-upload">
               <label class="foto-btn" for="recl-fotos">
@@ -158,6 +165,7 @@
       <section id="sec-mios" hidden>
         <div class="card">
           <h2>Mis reportes</h2>
+          <button id="btn-empty-reporte" hidden type="button"></button>
           <div id="mios-list"></div>
         </div>
       </section>
@@ -168,9 +176,11 @@
           <form id="sugerencia-form">
             <label>Título de tu sugerencia
               <input type="text" id="sug-titulo" required minlength="3" maxlength="200">
+              <span class="char-counter" id="cnt-sug-titulo">0 / 200</span>
             </label>
             <label>Detalle
               <textarea id="sug-descripcion" required minlength="10" maxlength="2000" rows="5"></textarea>
+              <span class="char-counter" id="cnt-sug-desc">0 / 2000 (mínimo 10)</span>
             </label>
             <div class="foto-upload">
               <label class="foto-btn" for="sug-fotos">
@@ -190,6 +200,7 @@
       <section id="sec-mias" hidden>
         <div class="card">
           <h2>Mis sugerencias</h2>
+          <button id="btn-empty-sug" hidden type="button"></button>
           <div id="mias-list"></div>
         </div>
       </section>
@@ -210,6 +221,7 @@
             <label for="filtro-buscar-reclamo">Buscar</label>
             <input type="search" id="filtro-buscar-reclamo" placeholder="Buscar por título, detalle o casa…">
             <button class="btn ghost sm" id="btn-exportar-reclamos" type="button">Exportar CSV</button>
+            <button id="btn-limpiar-rec" hidden type="button"></button>
           </div>
           <div id="reclamos-list"></div>
         </div>
@@ -222,6 +234,7 @@
             <label for="filtro-buscar-sugerencia">Buscar</label>
             <input type="search" id="filtro-buscar-sugerencia" placeholder="Buscar por título, detalle o casa…">
             <button class="btn ghost sm" id="btn-exportar-sugerencias" type="button">Exportar CSV</button>
+            <button id="btn-limpiar-sug" hidden type="button"></button>
           </div>
           <div id="sugerencias-list"></div>
         </div>

@@ -1210,3 +1210,40 @@ footer.site {
 
 /* Tarjeta de novedad dentro de la app */
 .reclamo.novedad { border-color: #fde68a; background: #fffbeb; }
+
+/* ---------- Enhancements UX ---------- */
+.char-counter {
+  display: flex;
+  justify-content: flex-end;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  margin-top: 3px;
+}
+.char-counter.ok { color: var(--leaf); }
+.char-counter.warn { color: #d97706; }
+
+.empty-state-box {
+  background: rgba(248, 250, 252, 0.8);
+  border: 2px dashed #cbd5e1;
+  border-radius: 16px;
+  padding: 32px 20px;
+  text-align: center;
+  margin: 12px 0;
+}
+.empty-state-icon {
+  font-size: 36px;
+  margin-bottom: 8px;
+}
+.empty-state-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--forest);
+  margin-bottom: 4px;
+}
+.empty-state-sub {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 16px;
+  font-weight: 600;
+}

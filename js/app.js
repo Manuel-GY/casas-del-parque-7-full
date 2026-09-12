@@ -348,7 +348,7 @@
           '</div>' +
         '</div>' +
         '<div class="admin-kpi-grid">' +
-          '<div class="admin-kpi-card' + (nuevosRec > 0 ? ' alert-nuevos' : '') + '">' +
+          '<div class="admin-kpi-card' + (nuevosRec > 0 ? ' alert-nuevos' : '') + '" id="btn-kpi-admin-nuevos" style="cursor:pointer;" title="Ver reportes sin atender">' +
             '<div class="admin-kpi-top">' +
               '<div class="admin-kpi-icon icon-alert">' +
                 '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>' +
@@ -360,7 +360,7 @@
             '<div class="admin-kpi-sub">Reportes nuevos</div>' +
           '</div>' +
 
-          '<div class="admin-kpi-card">' +
+          '<div class="admin-kpi-card" id="btn-kpi-admin-proceso" style="cursor:pointer;" title="Ver reportes en revisión">' +
             '<div class="admin-kpi-top">' +
               '<div class="admin-kpi-icon icon-process">' +
                 '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>' +
@@ -371,7 +371,7 @@
             '<div class="admin-kpi-sub">En evaluación</div>' +
           '</div>' +
 
-          '<div class="admin-kpi-card">' +
+          '<div class="admin-kpi-card" id="btn-kpi-admin-resueltos" style="cursor:pointer;" title="Ver reportes resueltos">' +
             '<div class="admin-kpi-top">' +
               '<div class="admin-kpi-icon icon-success">' +
                 '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>' +
@@ -382,7 +382,7 @@
             '<div class="admin-kpi-sub">de ' + totalRec + ' reportes</div>' +
           '</div>' +
 
-          '<div class="admin-kpi-card">' +
+          '<div class="admin-kpi-card" id="btn-kpi-admin-sug" style="cursor:pointer;" title="Ver sugerencias de la comunidad">' +
             '<div class="admin-kpi-top">' +
               '<div class="admin-kpi-icon icon-community">' +
                 '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>' +
@@ -404,6 +404,42 @@
             '<div class="admin-kpi-sub">' + (e.vecinos || 0) + ' vecinos · ' + (e.casas_llenas || 0) + ' llenas</div>' +
           '</div>' +
         '</div>';
+
+      var akNuevos = document.getElementById("btn-kpi-admin-nuevos");
+      if (akNuevos) akNuevos.addEventListener("click", function () {
+        mostrarSeccion("sec-reclamos");
+        var inp = document.getElementById("filtro-buscar-reclamo");
+        if (inp) inp.value = "nuevo";
+        busquedaRec = "nuevo";
+        recPage = 1;
+        rendReclamos();
+      });
+
+      var akProceso = document.getElementById("btn-kpi-admin-proceso");
+      if (akProceso) akProceso.addEventListener("click", function () {
+        mostrarSeccion("sec-reclamos");
+        var inp = document.getElementById("filtro-buscar-reclamo");
+        if (inp) inp.value = "en_revision";
+        busquedaRec = "en_revision";
+        recPage = 1;
+        rendReclamos();
+      });
+
+      var akResueltos = document.getElementById("btn-kpi-admin-resueltos");
+      if (akResueltos) akResueltos.addEventListener("click", function () {
+        mostrarSeccion("sec-reclamos");
+        var inp = document.getElementById("filtro-buscar-reclamo");
+        if (inp) inp.value = "resuelto";
+        busquedaRec = "resuelto";
+        recPage = 1;
+        rendReclamos();
+      });
+
+      var akSug = document.getElementById("btn-kpi-admin-sug");
+      if (akSug) akSug.addEventListener("click", function () {
+        mostrarSeccion("sec-sugerencias");
+      });
+    }
     }
   }
 
@@ -796,7 +832,18 @@
       .eq("eliminado", false)
       .order("created_at", { ascending: false });
     if (q.error) { wrap.innerHTML = '<p class="hint">' + SBH.esc(SBH.fmtErr(q.error.message)) + "</p>"; return; }
-    if (!q.data.length) { wrap.innerHTML = '<p class="hint">Aún no has enviado sugerencias.</p>'; return; }
+    if (!q.data.length) {
+      wrap.innerHTML =
+        '<div class="empty-state-box">' +
+          '<div class="empty-state-icon">💡</div>' +
+          '<div class="empty-state-title">Aún no has enviado sugerencias</div>' +
+          '<div class="empty-state-sub">Comparte tus ideas para mejorar la convivencia e instalaciones de tu comunidad.</div>' +
+          '<button class="btn primary sm" type="button" id="btn-empty-sug">💡 Proponer una sugerencia</button>' +
+        '</div>';
+      var bEmptyS = document.getElementById("btn-empty-sug");
+      if (bEmptyS) bEmptyS.addEventListener("click", function () { mostrarSeccion("sec-sugerir"); });
+      return;
+    }
     wrap.innerHTML = q.data.map(tarjetaSugerenciaMia).join("");
     hidratarFotos(wrap);
   }
@@ -831,7 +878,18 @@
       .eq("eliminado", false)
       .order("created_at", { ascending: false });
     if (q.error) { wrap.innerHTML = '<p class="hint">' + SBH.esc(SBH.fmtErr(q.error.message)) + "</p>"; return; }
-    if (!q.data.length) { wrap.innerHTML = '<p class="hint">Aún no has enviado reportes.</p>'; return; }
+    if (!q.data.length) {
+      wrap.innerHTML =
+        '<div class="empty-state-box">' +
+          '<div class="empty-state-icon">📋</div>' +
+          '<div class="empty-state-title">Aún no has enviado reportes</div>' +
+          '<div class="empty-state-sub">Informa situaciones de seguridad, luminarias, aseo u otras áreas de tu condominio.</div>' +
+          '<button class="btn primary sm" type="button" id="btn-empty-reporte">➕ Crear mi primer reporte</button>' +
+        '</div>';
+      var bEmptyR = document.getElementById("btn-empty-reporte");
+      if (bEmptyR) bEmptyR.addEventListener("click", function () { mostrarSeccion("sec-nuevo"); });
+      return;
+    }
     wrap.innerHTML = q.data.map(tarjetaReclamo).join("");
     hidratarFotos(wrap);
   }
@@ -896,8 +954,21 @@
     });
     if (!lista.length) {
       wrap.innerHTML = recCache.length
-        ? '<p class="hint">No hay reportes que coincidan con la búsqueda.</p>'
+        ? '<div class="empty-state-box">' +
+            '<div class="empty-state-icon">🔍</div>' +
+            '<div class="empty-state-title">No hay reportes que coincidan</div>' +
+            '<div class="empty-state-sub">Prueba buscando con otro término o limpia el filtro actual.</div>' +
+            '<button class="btn ghost sm" type="button" id="btn-limpiar-rec">🧹 Limpiar filtro de búsqueda</button>' +
+          '</div>'
         : '<p class="hint">No hay reportes aún.</p>';
+      var bLimpiRec = document.getElementById("btn-limpiar-rec");
+      if (bLimpiRec) bLimpiRec.addEventListener("click", function () {
+        var inp = document.getElementById("filtro-buscar-reclamo");
+        if (inp) inp.value = "";
+        busquedaRec = "";
+        recPage = 1;
+        rendReclamos();
+      });
       return;
     }
 
@@ -951,6 +1022,18 @@
   }
 
   function bindResponder() {
+    document.querySelectorAll("#reclamos-list .resp-estado").forEach(function (sel) {
+      sel.addEventListener("change", function () {
+        var card = sel.closest(".reclamo");
+        if (!card) return;
+        var chipEl = card.querySelector(".head .chip");
+        if (!chipEl) return;
+        var val = sel.value;
+        var lbl = SB.ESTADOS[val] || val;
+        chipEl.textContent = lbl;
+        chipEl.className = "chip estado-" + val;
+      });
+    });
     document.querySelectorAll("#reclamos-list .responder").forEach(function (f) {
       f.addEventListener("submit", async function (e) {
         e.preventDefault();
@@ -1026,8 +1109,21 @@
     });
     if (!lista.length) {
       wrap.innerHTML = sugCache.length
-        ? '<p class="hint">No hay sugerencias que coincidan con la búsqueda.</p>'
+        ? '<div class="empty-state-box">' +
+            '<div class="empty-state-icon">🔍</div>' +
+            '<div class="empty-state-title">No hay sugerencias que coincidan</div>' +
+            '<div class="empty-state-sub">Prueba buscando con otro término o limpia el filtro actual.</div>' +
+            '<button class="btn ghost sm" type="button" id="btn-limpiar-sug">🧹 Limpiar filtro de búsqueda</button>' +
+          '</div>'
         : '<p class="hint">No hay sugerencias aún.</p>';
+      var bLimpiSug = document.getElementById("btn-limpiar-sug");
+      if (bLimpiSug) bLimpiSug.addEventListener("click", function () {
+        var inp = document.getElementById("filtro-buscar-sugerencia");
+        if (inp) inp.value = "";
+        busquedaSug = "";
+        sugPage = 1;
+        rendSugerencias();
+      });
       return;
     }
 
@@ -1081,6 +1177,19 @@
   }
 
   function bindResponderSug() {
+    document.querySelectorAll("#sugerencias-list .resp-estado").forEach(function (sel) {
+      sel.addEventListener("change", function () {
+        var card = sel.closest(".reclamo");
+        if (!card) return;
+        var chipEl = card.querySelector(".head .chip");
+        if (!chipEl) return;
+        var val = sel.value;
+        var mapLbl = { nueva: "Nueva", en_revision: "En revisión", resuelta: "Resuelta" };
+        var mapSt = { nueva: "nuevo", en_revision: "en_revision", resuelta: "resuelto" };
+        chipEl.textContent = mapLbl[val] || val;
+        chipEl.className = "chip estado-" + (mapSt[val] || val);
+      });
+    });
     document.querySelectorAll("#sugerencias-list .responder").forEach(function (f) {
       f.addEventListener("submit", async function (e) {
         e.preventDefault();
@@ -1432,6 +1541,25 @@
 
     var btnExpSug = document.getElementById("btn-exportar-sugerencias");
     if (btnExpSug) btnExpSug.addEventListener("click", function () { exportarCSVSugerencias(); });
+
+    function bindCharCount(inputId, countId, minLen, maxLen) {
+      var inp = document.getElementById(inputId);
+      var cnt = document.getElementById(countId);
+      if (!inp || !cnt) return;
+      function update() {
+        var len = inp.value.length;
+        cnt.textContent = len + " / " + maxLen + (minLen ? " (mínimo " + minLen + ")" : "");
+        cnt.classList.toggle("ok", minLen ? len >= minLen : len > 0);
+        cnt.classList.toggle("warn", minLen ? (len > 0 && len < minLen) : false);
+      }
+      inp.addEventListener("input", update);
+      update();
+    }
+
+    bindCharCount("recl-titulo", "cnt-recl-titulo", 3, 200);
+    bindCharCount("recl-descripcion", "cnt-recl-desc", 10, 2000);
+    bindCharCount("sug-titulo", "cnt-sug-titulo", 3, 200);
+    bindCharCount("sug-descripcion", "cnt-sug-desc", 10, 2000);
 
     boot();
   });
