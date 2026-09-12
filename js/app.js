@@ -227,6 +227,8 @@
       var sugResueltas = sug.resuelta;
 
       var vHero = document.getElementById("vecino-hero-banner");
+      var aHero = document.getElementById("admin-hero-banner");
+      if (aHero) aHero.hidden = true;
       if (vHero) {
         vHero.hidden = false;
         banner.style.display = "none";
@@ -319,6 +321,8 @@
 
       // Renderizar Banner Ejecutivo de Administración
       var hero = document.getElementById("admin-hero-banner");
+      var vHero = document.getElementById("vecino-hero-banner");
+      if (vHero) vHero.hidden = true;
       if (hero) {
         hero.hidden = false;
         banner.style.display = "none"; // Ocultar el resumen simple de vecinos
