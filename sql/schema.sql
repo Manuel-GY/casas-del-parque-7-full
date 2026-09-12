@@ -109,6 +109,8 @@ create index if not exists reclamos_estado_idx on public.reclamos(estado);
 create index if not exists reclamos_casa_idx  on public.reclamos(numero_casa);
 create index if not exists reclamos_fecha_idx on public.reclamos(created_at);
 create index if not exists reclamos_creado_idx on public.reclamos(creado_por);
+create index if not exists reclamos_vecino_opt_idx on public.reclamos(creado_por, eliminado);
+create index if not exists reclamos_fecha_opt_idx on public.reclamos(eliminado, created_at desc);
 
 -- Compatibilidad con esquemas previos (idempotente)
 alter table public.reclamos add column if not exists fotos text[] not null default '{}';
@@ -141,6 +143,8 @@ create table if not exists public.sugerencias (
 create index if not exists sugerencias_casa_idx on public.sugerencias(numero_casa);
 create index if not exists sugerencias_fecha_idx on public.sugerencias(created_at);
 create index if not exists sugerencias_creado_idx on public.sugerencias(creado_por);
+create index if not exists sugerencias_vecino_opt_idx on public.sugerencias(creado_por, eliminado);
+create index if not exists sugerencias_fecha_opt_idx on public.sugerencias(eliminado, created_at desc);
 
 alter table public.sugerencias add column if not exists fotos text[] not null default '{}';
 alter table public.sugerencias add column if not exists updated_at timestamptz not null default now();

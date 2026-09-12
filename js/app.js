@@ -1317,6 +1317,18 @@
   /*  Event listeners principales (DOMContentLoaded)                    */
   /* ================================================================== */
 
+  function debounce(fn, ms) {
+    var timer;
+    return function () {
+      var args = arguments;
+      var ctx = this;
+      clearTimeout(timer);
+      timer = setTimeout(function () {
+        fn.apply(ctx, args);
+      }, ms || 150);
+    };
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     if (!document.getElementById("app-main")) return;
 
@@ -1391,20 +1403,20 @@
 
     var fBuscarRec = document.getElementById("filtro-buscar-reclamo");
     if (fBuscarRec) {
-      fBuscarRec.addEventListener("input", function () {
+      fBuscarRec.addEventListener("input", debounce(function () {
         busquedaRec = fBuscarRec.value.trim().toLowerCase();
         recPage = 1;
         rendReclamos();
-      });
+      }, 150));
     }
 
     var fBuscarSug = document.getElementById("filtro-buscar-sugerencia");
     if (fBuscarSug) {
-      fBuscarSug.addEventListener("input", function () {
+      fBuscarSug.addEventListener("input", debounce(function () {
         busquedaSug = fBuscarSug.value.trim().toLowerCase();
         sugPage = 1;
         rendSugerencias();
-      });
+      }, 150));
     }
 
     var btnExpRec = document.getElementById("btn-exportar-reclamos");
