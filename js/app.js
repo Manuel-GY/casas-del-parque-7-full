@@ -243,6 +243,7 @@
       var b = document.createElement("button");
       b.className = "tab" + (i === 0 ? " active" : "");
       b.type = "button";
+      if (i === 0) b.setAttribute("aria-current", "page");
       b.innerHTML = (t.icon || "") + '<span>' + SBH.esc(t.txt) + '</span>';
       b.dataset.target = t.id;
       b.addEventListener("click", function () { mostrarSeccion(t.id); });
@@ -256,7 +257,10 @@
     var secciones = ["sec-nuevo", "sec-mios", "sec-sugerir", "sec-mias", "sec-novedades", "sec-reclamos", "sec-sugerencias", "sec-stats", "sec-usuarios"];
     secciones.forEach(function (s) { document.getElementById(s).hidden = (s !== id); });
     document.querySelectorAll("#nav .tab").forEach(function (t) {
-      t.classList.toggle("active", t.dataset.target === id);
+      var esActivo = t.dataset.target === id;
+      t.classList.toggle("active", esActivo);
+      if (esActivo) { t.setAttribute("aria-current", "page"); }
+      else { t.removeAttribute("aria-current"); }
     });
 
     if (id === "sec-nuevo") {
