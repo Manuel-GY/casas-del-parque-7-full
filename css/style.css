@@ -106,10 +106,13 @@ h1, h2, .app-name, .logo { font-family: "Baloo 2", "Nunito", sans-serif; }
 .tabs {
   display: flex;
   gap: 6px;
-  background: rgba(226, 232, 230, .8);
+  background: linear-gradient(135deg, rgba(255, 255, 255, .80), rgba(214, 246, 222, .72));
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(74, 222, 128, .35);
   border-radius: 16px;
   padding: 5px;
   margin-bottom: 18px;
+  box-shadow: 0 6px 18px rgba(20, 83, 45, .08);
 }
 .tab {
   flex: 1;
@@ -120,13 +123,17 @@ h1, h2, .app-name, .logo { font-family: "Baloo 2", "Nunito", sans-serif; }
   font-weight: 800;
   font-size: 14px;
   cursor: pointer;
-  color: var(--muted);
+  color: rgba(20, 83, 45, .60);
   transition: .15s;
 }
-.tab.active {
-  background: #fff;
+.tab:hover {
+  background: rgba(74, 222, 128, .18);
   color: var(--forest);
-  box-shadow: 0 3px 10px rgba(20, 83, 45, .12);
+}
+.tab.active {
+  background: linear-gradient(135deg, #22c55e, #15803d);
+  color: #fff;
+  box-shadow: 0 3px 10px rgba(20, 83, 45, .22);
 }
 
 .view form { display: grid; gap: 14px; }
@@ -824,8 +831,8 @@ nav.tabs .tab {
   gap: 6px;
   flex: 0 0 auto;
   padding: 11px 20px;
-  background: var(--soft);
-  color: var(--muted);
+  background: rgba(255, 255, 255, .92);
+  color: rgba(20, 83, 45, .60);
   border: 2px solid rgba(255, 255, 255, .8);
   box-shadow: var(--shadow-soft);
   border-radius: 999px;
@@ -855,7 +862,7 @@ nav.tabs .tab.active {
     z-index: 100;
     margin: 0;
     padding: 8px 6px calc(8px + env(safe-area-inset-bottom));
-    background: rgba(255, 255, 255, .96);
+    background: linear-gradient(135deg, rgba(255, 255, 255, .97), rgba(220, 245, 226, .95));
     backdrop-filter: blur(16px);
     border-top: 1px solid rgba(20, 83, 45, .15);
     box-shadow: 0 -4px 20px rgba(20, 83, 45, .12);
@@ -876,7 +883,7 @@ nav.tabs .tab.active {
     border: none;
     box-shadow: none;
     background: transparent;
-    color: var(--muted);
+    color: rgba(20, 83, 45, .60);
     min-height: 48px;
   }
 
