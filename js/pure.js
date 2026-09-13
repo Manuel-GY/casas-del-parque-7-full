@@ -32,6 +32,7 @@
     luminarias: "Luminarias",
     aseo: "Aseo y residuos",
     estacionamientos: "Estacionamientos",
+    ruidos: "Ruidos molestos",
     otro: "Otros"
   };
 

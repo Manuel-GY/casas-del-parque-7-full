@@ -35,6 +35,7 @@
       luminarias: "Luminarias",
       aseo: "Aseo y residuos",
       estacionamientos: "Estacionamientos",
+      ruidos: "Ruidos molestos",
       otro: "Otros"
     },
     ESTADOS: pure.ESTADOS || { nuevo: "Nuevo", en_revision: "En revisión", resuelto: "Resuelto" },

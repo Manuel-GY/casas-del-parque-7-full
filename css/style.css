@@ -786,6 +786,15 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--l
 }
 .card h2 { margin: 0 0 16px; font-size: 20px; color: var(--forest); }
 .card .sub { margin: -10px 0 16px; color: var(--muted); font-size: 13px; font-weight: 600; }
+.card .ruido-sep { border: none; border-top: 1px solid rgba(0,0,0,0.08); margin: 20px 0 24px; }
+
+.check-label {
+  display: flex; align-items: center; gap: 10px; margin: 4px 0 16px;
+  font-size: 14px; color: var(--text); cursor: pointer; font-weight: 600;
+}
+.check-label input[type="checkbox"] {
+  width: 18px; height: 18px; accent-color: var(--forest); cursor: pointer; flex-shrink: 0;
+}
 
 nav.tabs {
   display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-bottom: 22px;

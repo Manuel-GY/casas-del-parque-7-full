@@ -611,6 +611,7 @@
       if (appMain) appMain.classList.remove("hidden");
 
       llenarReclamoForm();
+      llenarRuidoForm();
       llenarSugerenciaForm();
       vincularNovedades();
       vincularFotoModal();
@@ -782,6 +783,48 @@
       limpiarPreview("recl-fotos-preview", "recl-fotos-info");
       cargarResumen();
     });
+  }
+
+  /* ================================================================== */
+  /*  VECINO: Nuevo reporte de ruidos molestos                           */
+  /* ================================================================== */
+
+  function llenarRuidoForm() {
+    var _ruidoBound = document.getElementById("ruido-form").getAttribute("data-bound");
+    if (_ruidoBound) return;
+
+    document.getElementById("ruido-form").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      SBH.mostrar("msg", "", "ok");
+      var titulo = document.getElementById("ruido-titulo").value.trim();
+      var descripcion = document.getElementById("ruido-descripcion").value.trim();
+      var informado = document.getElementById("ruido-guardia").checked;
+      if (titulo.length < 3 || titulo.length > 200) {
+        SBH.mostrar("msg", "El título debe tener entre 3 y 200 caracteres.", "error");
+        return;
+      }
+      if (descripcion.length < 10 || descripcion.length > 2000) {
+        SBH.mostrar("msg", "La descripción del reporte debe tener al menos 10 y máximo 2000 caracteres.", "error");
+        return;
+      }
+
+      var payload = {
+        creado_por: user.id,
+        numero_casa: profile.numero_casa,
+        categoria: "ruidos",
+        titulo: titulo,
+        descripcion: descripcion,
+        informado_guardia: informado
+      };
+
+      var ins = await SB.client.from("reclamos").insert([payload]);
+      if (ins.error) { SBH.mostrar("msg", SBH.fmtErr(ins.error.message), "error"); return; }
+      SBH.mostrar("msg", "Reporte de ruido enviado. El comité lo revisará.", "ok");
+      e.target.reset();
+      cargarResumen();
+    });
+
+    document.getElementById("ruido-form").setAttribute("data-bound", "1");
   }
 
   /* ================================================================== */
@@ -1025,6 +1068,8 @@
   function tarjetaReclamo(r) {
     var resp = r.respuesta
       ? '<div class="respuesta-box"><b>Respuesta del comité:</b> ' + SBH.esc(r.respuesta) + "</div>" : "";
+    var guardia = r.informado_guardia
+      ? '<span class="chip estado-en_revision" style="padding:4px 8px;font-size:11px;">🚨 Se informó a guardia</span>' : "";
     return (
       '<div class="reclamo">' +
         '<div class="head">' +
@@ -1033,7 +1078,7 @@
             '<div class="meta">' + SBH.esc(SBH.catLabel(r.categoria)) +
               " · " + SBH.fmtFecha(r.created_at) + "</div>" +
           "</div>" +
-          '<div>' + chip(SB.ESTADOS[r.estado] || r.estado, "estado-" + r.estado) + "</div>" +
+          '<div>' + guardia + chip(SB.ESTADOS[r.estado] || r.estado, "estado-" + r.estado) + "</div>" +
         "</div>" +
         '<div class="desc">' + SBH.esc(r.descripcion) + "</div>" + resp + fotosHtml(r.fotos) +
       "</div>"
@@ -1129,7 +1174,8 @@
               (r.nombre ? " · " + SBH.esc(r.nombre) : "") +
               " · " + SBH.fmtFecha(r.created_at) + "</div>" +
           "</div>" +
-          '<div>' + chip(SB.ESTADOS[r.estado] || r.estado, "estado-" + r.estado) + "</div>" +
+          '<div>' + (r.informado_guardia ? '<span class="chip estado-en_revision" style="padding:4px 8px;font-size:11px;">🚨 Guardia informado</span>' : "") +
+            chip(SB.ESTADOS[r.estado] || r.estado, "estado-" + r.estado) + "</div>" +
         "</div>" +
         '<div class="meta">Categoría: ' + SBH.esc(SBH.catLabel(r.categoria)) + "</div>" +
         '<div class="desc">' + SBH.esc(r.descripcion) + "</div>" + resp + fotosHtml(r.fotos) +
@@ -1700,6 +1746,8 @@
 
     bindCharCount("recl-titulo", "cnt-recl-titulo", 3, 200);
     bindCharCount("recl-descripcion", "cnt-recl-desc", 10, 2000);
+    bindCharCount("ruido-titulo", "cnt-ruido-titulo", 3, 200);
+    bindCharCount("ruido-descripcion", "cnt-ruido-desc", 10, 2000);
     bindCharCount("sug-titulo", "cnt-sug-titulo", 3, 200);
     bindCharCount("sug-descripcion", "cnt-sug-desc", 10, 2000);
 

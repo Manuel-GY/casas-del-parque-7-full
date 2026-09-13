@@ -86,7 +86,7 @@ create table if not exists public.reclamos (
   creado_por    uuid references public.profiles(id) on delete set null,
   numero_casa   integer not null references public.casas(numero),
   categoria     text not null
-                check (categoria in ('seguridad','instalaciones','plazas','calles','luminarias','aseo','estacionamientos','otro')),
+                check (categoria in ('seguridad','instalaciones','plazas','calles','luminarias','aseo','estacionamientos','ruidos','otro')),
   severidad     text
                 check (severidad is null or severidad in ('baja','media','alta')),
   titulo        text not null check (length(titulo) between 3 and 200),
@@ -97,6 +97,7 @@ create table if not exists public.reclamos (
   atendido_por  uuid references public.profiles(id) on delete set null,
   resuelto_en   timestamptz,
   fotos         text[] not null default '{}',
+  informado_guardia boolean not null default false,
   updated_at    timestamptz not null default now(),
   eliminado     boolean not null default false,
   eliminado_en  timestamptz,
@@ -118,6 +119,10 @@ alter table public.reclamos add column if not exists updated_at timestamptz not 
 alter table public.reclamos add column if not exists eliminado boolean not null default false;
 alter table public.reclamos add column if not exists eliminado_en timestamptz;
 alter table public.reclamos add column if not exists eliminado_por uuid;
+alter table public.reclamos add column if not exists informado_guardia boolean not null default false;
+alter table public.reclamos drop constraint if exists reclamos_categoria_check;
+alter table public.reclamos add constraint reclamos_categoria_check
+  check (categoria in ('seguridad','instalaciones','plazas','calles','luminarias','aseo','estacionamientos','ruidos','otro'));
 
 -- ============================================================
 -- 4) SUGERENCIAS
@@ -405,6 +410,7 @@ returns table (
   numero_casa     integer,
   atendido_nombre text,
   fotos           text[],
+  informado_guardia boolean,
   created_at      timestamptz,
   updated_at      timestamptz,
   resuelto_en     timestamptz
@@ -423,6 +429,7 @@ begin
            p.nombre, r.numero_casa,
            pa.nombre as atendido_nombre,
            coalesce(r.fotos, '{}'::text[]),
+           r.informado_guardia,
            r.created_at, r.updated_at, r.resuelto_en
     from public.reclamos r
     left join public.profiles p  on p.id  = r.creado_por
