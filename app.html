@@ -181,6 +181,10 @@
               <textarea id="recl-descripcion" required minlength="10" maxlength="2000" rows="5" placeholder="Describe la situación en detalle (mínimo 10 caracteres)..."></textarea>
               <span class="char-counter" id="cnt-recl-desc">0 caracteres escritos (mínimo 10, máx. 2000)</span>
             </label>
+            <label class="check-label" id="recl-guardia-wrap" hidden>
+              <input type="checkbox" id="recl-guardia">
+              <span>Se informó a guardia</span>
+            </label>
             <div class="foto-upload">
               <label class="foto-btn" for="recl-fotos">
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
@@ -191,29 +195,6 @@
             </div>
             <div id="recl-fotos-preview" class="fotos-preview"></div>
             <button class="btn primary" type="submit">Enviar reporte</button>
-            <p class="privacy-note">🔒 Privacidad garantizada: Este reporte es confidencial y solo será visible para ti, el comité y la administración.</p>
-          </form>
-        </div>
-      </section>
-
-      <section id="sec-ruidos" hidden>
-        <div class="card">
-          <h2>Reportar ruidos molestos</h2>
-          <p class="sub">Reporta ruidos excesivos que alteren la convivencia del condominio.</p>
-          <form id="ruido-form" novalidate>
-            <label>Título
-              <input type="text" id="ruido-titulo" required minlength="3" maxlength="200" placeholder="Título corto del reporte de ruido...">
-              <span class="char-counter" id="cnt-ruido-titulo">0 caracteres escritos (mínimo 3, máx. 200)</span>
-            </label>
-            <label>Descripción (mínimo 10 caracteres)
-              <textarea id="ruido-descripcion" required minlength="10" maxlength="2000" rows="4" placeholder="Describe la situación de ruido en detalle (mínimo 10 caracteres)..."></textarea>
-              <span class="char-counter" id="cnt-ruido-desc">0 caracteres escritos (mínimo 10, máx. 2000)</span>
-            </label>
-            <label class="check-label">
-              <input type="checkbox" id="ruido-guardia">
-              <span>Se informó a guardia</span>
-            </label>
-            <button class="btn primary" type="submit">Enviar reporte de ruido</button>
             <p class="privacy-note">🔒 Privacidad garantizada: Este reporte es confidencial y solo será visible para ti, el comité y la administración.</p>
           </form>
         </div>
