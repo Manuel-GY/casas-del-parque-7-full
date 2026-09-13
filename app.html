@@ -257,7 +257,6 @@
             <label for="filtro-buscar-reclamo">Buscar</label>
             <input type="search" id="filtro-buscar-reclamo" placeholder="Buscar por título, detalle o casa…">
             <button class="btn ghost sm" id="btn-exportar-reclamos" type="button">Exportar CSV</button>
-            <button id="btn-limpiar-rec" hidden type="button"></button>
           </div>
           <div id="reclamos-list"></div>
         </div>
@@ -266,11 +265,11 @@
       <section id="sec-sugerencias" hidden>
         <div class="card">
           <h2>Sugerencias de la comunidad</h2>
+          <div id="sugerencias-kpi-bar" class="reclamos-kpi-bar" hidden></div>
           <div class="filtro">
             <label for="filtro-buscar-sugerencia">Buscar</label>
             <input type="search" id="filtro-buscar-sugerencia" placeholder="Buscar por título, detalle o casa…">
             <button class="btn ghost sm" id="btn-exportar-sugerencias" type="button">Exportar CSV</button>
-            <button id="btn-limpiar-sug" hidden type="button"></button>
           </div>
           <div id="sugerencias-list"></div>
         </div>

@@ -30,6 +30,8 @@
   var sugCache = [];    // Cache local de sugerencias (para filtros)
   var busquedaRec = "";
   var busquedaSug = "";
+  var filtroEstadoRec = "";  // '' | 'nuevo' | 'en_revision' | 'resuelto'
+  var filtroEstadoSug = "";  // '' | 'nueva' | 'en_revision' | 'resuelta'
 
   /* ------------------------------------------------------------------ */
   /*  Flags para evitar duplicacion de event listeners                   */
@@ -515,8 +517,9 @@
       if (akNuevos) akNuevos.addEventListener("click", function () {
         mostrarSeccion("sec-reclamos");
         var inp = document.getElementById("filtro-buscar-reclamo");
-        if (inp) inp.value = "nuevo";
-        busquedaRec = "nuevo";
+        if (inp) inp.value = "";
+        busquedaRec = "";
+        filtroEstadoRec = "nuevo";
         recPage = 1;
         rendReclamos();
       });
@@ -525,8 +528,9 @@
       if (akProceso) akProceso.addEventListener("click", function () {
         mostrarSeccion("sec-reclamos");
         var inp = document.getElementById("filtro-buscar-reclamo");
-        if (inp) inp.value = "en_revision";
-        busquedaRec = "en_revision";
+        if (inp) inp.value = "";
+        busquedaRec = "";
+        filtroEstadoRec = "en_revision";
         recPage = 1;
         rendReclamos();
       });
@@ -535,8 +539,9 @@
       if (akResueltos) akResueltos.addEventListener("click", function () {
         mostrarSeccion("sec-reclamos");
         var inp = document.getElementById("filtro-buscar-reclamo");
-        if (inp) inp.value = "resuelto";
-        busquedaRec = "resuelto";
+        if (inp) inp.value = "";
+        busquedaRec = "";
+        filtroEstadoRec = "resuelto";
         recPage = 1;
         rendReclamos();
       });
@@ -1068,28 +1073,104 @@
     recCache = q.data || [];
     recPage = 1;
 
-    // Resumen KPI compacto para comité/admin en la sección de reportes
+    // Resumen KPI compacto clicable para comité/admin en la sección de reportes
     if (rol === "comite" || rol === "admin") {
-      var nNuevos = recCache.filter(function (r) { return r.estado === "nuevo"; }).length;
-      var nProceso = recCache.filter(function (r) { return r.estado === "en_revision"; }).length;
-      var nResueltos = recCache.filter(function (r) { return r.estado === "resuelto"; }).length;
       var bar = document.getElementById("reclamos-kpi-bar");
       if (bar) {
         bar.hidden = false;
-        bar.innerHTML =
-          '<div class="reclamos-kpi-item"><span>Reportes Totales:</span> <b>' + recCache.length + '</b></div>' +
-          '<div class="reclamos-kpi-item"><span>Sin atender:</span> <span class="num-badge nuevo">' + nNuevos + '</span></div>' +
-          '<div class="reclamos-kpi-item"><span>En revisión:</span> <span class="num-badge proceso">' + nProceso + '</span></div>' +
-          '<div class="reclamos-kpi-item"><span>Resueltos:</span> <span class="num-badge resuelto">' + nResueltos + '</span></div>';
+        bar.innerHTML = renderKpiBarReclamos();
+        bindKpiBarReclamos();
       }
     }
 
     rendReclamos();
   }
 
+  function renderKpiBarReclamos() {
+    var nNuevos = recCache.filter(function (r) { return r.estado === "nuevo"; }).length;
+    var nProceso = recCache.filter(function (r) { return r.estado === "en_revision"; }).length;
+    var nResueltos = recCache.filter(function (r) { return r.estado === "resuelto"; }).length;
+    var item = function (clave, label, n, css) {
+      var act = filtroEstadoRec === clave;
+      return '<div class="reclamos-kpi-item kpi-filtrable' + (act ? " active" : "") + '" data-estado="' + clave + '" role="button" tabindex="0" title="Filtrar por ' + label + '">' +
+        "<span>" + label + ':</span> <span class="num-badge ' + css + '">' + n + "</span>" +
+        "</div>";
+    };
+    return (
+      '<div class="reclamos-kpi-item"><span>Reportes Totales:</span> <b>' + recCache.length + '</b></div>' +
+      item("nuevo", "Sin atender", nNuevos, "nuevo") +
+      item("en_revision", "En revisión", nProceso, "proceso") +
+      item("resuelto", "Resueltos", nResueltos, "resuelto")
+    );
+  }
+
+  function bindKpiBarReclamos() {
+    var bar = document.getElementById("reclamos-kpi-bar");
+    if (!bar) return;
+    bar.querySelectorAll(".kpi-filtrable").forEach(function (el) {
+      el.addEventListener("click", function () {
+        var est = el.dataset.estado;
+        filtroEstadoRec = (filtroEstadoRec === est) ? "" : est;
+        recPage = 1;
+        rendReclamos();
+      });
+    });
+  }
+
+  function renderKpiBarSugerencias() {
+    var nNuevas = sugCache.filter(function (s) { return s.estado === "nueva"; }).length;
+    var nProceso = sugCache.filter(function (s) { return s.estado === "en_revision"; }).length;
+    var nResueltas = sugCache.filter(function (s) { return s.estado === "resuelta"; }).length;
+    var item = function (clave, label, n, css) {
+      var act = filtroEstadoSug === clave;
+      return '<div class="reclamos-kpi-item kpi-filtrable' + (act ? " active" : "") + '" data-estado="' + clave + '" role="button" tabindex="0" title="Filtrar por ' + label + '">' +
+        "<span>" + label + ':</span> <span class="num-badge ' + css + '">' + n + "</span>" +
+        "</div>";
+    };
+    return (
+      '<div class="reclamos-kpi-item"><span>Sugerencias Totales:</span> <b>' + sugCache.length + '</b></div>' +
+      item("nueva", "Sin atender", nNuevas, "nuevo") +
+      item("en_revision", "En revisión", nProceso, "proceso") +
+      item("resuelta", "Resueltas", nResueltas, "resuelto")
+    );
+  }
+
+  function bindKpiBarSugerencias() {
+    var bar = document.getElementById("sugerencias-kpi-bar");
+    if (!bar) return;
+    bar.querySelectorAll(".kpi-filtrable").forEach(function (el) {
+      el.addEventListener("click", function () {
+        var est = el.dataset.estado;
+        filtroEstadoSug = (filtroEstadoSug === est) ? "" : est;
+        sugPage = 1;
+        rendSugerencias();
+      });
+    });
+  }
+
+  function syncKpiBarReclamos() {
+    var bar = document.getElementById("reclamos-kpi-bar");
+    if (!bar) return;
+    bar.querySelectorAll(".kpi-filtrable").forEach(function (el) {
+      var act = filtroEstadoRec === el.dataset.estado;
+      el.classList.toggle("active", act);
+    });
+  }
+
+  function syncKpiBarSugerencias() {
+    var bar = document.getElementById("sugerencias-kpi-bar");
+    if (!bar) return;
+    bar.querySelectorAll(".kpi-filtrable").forEach(function (el) {
+      var act = filtroEstadoSug === el.dataset.estado;
+      el.classList.toggle("active", act);
+    });
+  }
+
   function rendReclamos() {
     var wrap = document.getElementById("reclamos-list");
+    syncKpiBarReclamos();
     var lista = recCache.filter(function (r) {
+      if (filtroEstadoRec && r.estado !== filtroEstadoRec) return false;
       if (busquedaRec) {
         var txt = (r.titulo + " " + r.descripcion + " " + (r.nombre || "") + " casa " + r.numero_casa).toLowerCase();
         if (txt.indexOf(busquedaRec) === -1) return false;
@@ -1105,11 +1186,12 @@
             '<button class="btn ghost sm" type="button" id="btn-limpiar-rec">🧹 Limpiar filtro de búsqueda</button>' +
           '</div>'
         : '<p class="hint">No hay reportes aún.</p>';
-      var bLimpiRec = document.getElementById("btn-limpiar-rec");
+      var bLimpiRec = wrap.querySelector(".btn");
       if (bLimpiRec) bLimpiRec.addEventListener("click", function () {
         var inp = document.getElementById("filtro-buscar-reclamo");
         if (inp) inp.value = "";
         busquedaRec = "";
+        filtroEstadoRec = "";
         recPage = 1;
         rendReclamos();
       });
@@ -1240,12 +1322,22 @@
     if (q.error) { wrap.innerHTML = '<p class="hint">' + SBH.esc(SBH.fmtErr(q.error.message)) + "</p>"; return; }
     sugCache = q.data || [];
     sugPage = 1;
+    if (rol === "admin") {
+      var bar = document.getElementById("sugerencias-kpi-bar");
+      if (bar) {
+        bar.hidden = false;
+        bar.innerHTML = renderKpiBarSugerencias();
+        bindKpiBarSugerencias();
+      }
+    }
     rendSugerencias();
   }
 
   function rendSugerencias() {
     var wrap = document.getElementById("sugerencias-list");
+    syncKpiBarSugerencias();
     var lista = sugCache.filter(function (s) {
+      if (filtroEstadoSug && s.estado !== filtroEstadoSug) return false;
       if (busquedaSug) {
         var txt = (s.titulo + " " + s.descripcion + " " + (s.nombre || "") + " casa " + s.numero_casa).toLowerCase();
         if (txt.indexOf(busquedaSug) === -1) return false;
@@ -1261,11 +1353,12 @@
             '<button class="btn ghost sm" type="button" id="btn-limpiar-sug">🧹 Limpiar filtro de búsqueda</button>' +
           '</div>'
         : '<p class="hint">No hay sugerencias aún.</p>';
-      var bLimpiSug = document.getElementById("btn-limpiar-sug");
+      var bLimpiSug = wrap.querySelector(".btn");
       if (bLimpiSug) bLimpiSug.addEventListener("click", function () {
         var inp = document.getElementById("filtro-buscar-sugerencia");
         if (inp) inp.value = "";
         busquedaSug = "";
+        filtroEstadoSug = "";
         sugPage = 1;
         rendSugerencias();
       });
