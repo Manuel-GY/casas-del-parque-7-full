@@ -222,6 +222,7 @@
 
     var tabs = [
       { id: "sec-nuevo", txt: "Reportar", icon: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>' },
+      { id: "sec-ruidos", txt: "Ruidos", icon: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 13 19 13 5 11 5"/><path d="M15.54 8.46a5 5 0 010 7.07"/><path d="M19.07 4.93a10 10 0 010 14.14"/></svg>' },
       { id: "sec-mios", txt: "Mis Reportes", icon: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' },
       { id: "sec-sugerir", txt: "Sugerir", icon: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>' },
       { id: "sec-mias", txt: "Mis Sugerencias", icon: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>' }
@@ -251,7 +252,7 @@
   }
 
   function mostrarSeccion(id) {
-    var secciones = ["sec-nuevo", "sec-mios", "sec-sugerir", "sec-mias", "sec-novedades", "sec-reclamos", "sec-sugerencias", "sec-stats", "sec-usuarios"];
+    var secciones = ["sec-nuevo", "sec-ruidos", "sec-mios", "sec-sugerir", "sec-mias", "sec-novedades", "sec-reclamos", "sec-sugerencias", "sec-stats", "sec-usuarios"];
     secciones.forEach(function (s) { document.getElementById(s).hidden = (s !== id); });
     document.querySelectorAll("#nav .tab").forEach(function (t) {
       t.classList.toggle("active", t.dataset.target === id);
@@ -259,6 +260,9 @@
 
     if (id === "sec-nuevo") {
       setTimeout(function () { var inp = document.getElementById("recl-titulo"); if (inp) inp.focus(); }, 50);
+    }
+    if (id === "sec-ruidos") {
+      setTimeout(function () { var inp = document.getElementById("ruido-titulo"); if (inp) inp.focus(); }, 50);
     }
     if (id === "sec-sugerir") {
       setTimeout(function () { var inp = document.getElementById("sug-titulo"); if (inp) inp.focus(); }, 50);

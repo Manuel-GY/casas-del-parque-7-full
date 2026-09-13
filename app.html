@@ -169,23 +169,6 @@
         <div class="card">
           <h2>Reportar al condominio</h2>
           <p class="sub">Cuéntanos cualquier situación: seguridad, instalaciones, plazas, calles, luminarias, aseo, estacionamientos u otro tema de la comunidad.</p>
-          <form id="ruido-form" novalidate>
-            <label>Título
-              <input type="text" id="ruido-titulo" required minlength="3" maxlength="200" placeholder="Título corto del reporte de ruido...">
-              <span class="char-counter" id="cnt-ruido-titulo">0 caracteres escritos (mínimo 3, máx. 200)</span>
-            </label>
-            <label>Descripción (mínimo 10 caracteres)
-              <textarea id="ruido-descripcion" required minlength="10" maxlength="2000" rows="4" placeholder="Describe la situación de ruido en detalle (mínimo 10 caracteres)..."></textarea>
-              <span class="char-counter" id="cnt-ruido-desc">0 caracteres escritos (mínimo 10, máx. 2000)</span>
-            </label>
-            <label class="check-label">
-              <input type="checkbox" id="ruido-guardia">
-              <span>Se informó a guardia</span>
-            </label>
-            <button class="btn primary" type="submit">Enviar reporte de ruido</button>
-            <p class="privacy-note">🔒 Privacidad garantizada: Este reporte es confidencial y solo será visible para ti, el comité y la administración.</p>
-          </form>
-          <hr class="ruido-sep">
           <form id="reclamo-form" novalidate>
             <label>Categoría
               <select id="recl-categoria" required></select>
@@ -208,6 +191,29 @@
             </div>
             <div id="recl-fotos-preview" class="fotos-preview"></div>
             <button class="btn primary" type="submit">Enviar reporte</button>
+            <p class="privacy-note">🔒 Privacidad garantizada: Este reporte es confidencial y solo será visible para ti, el comité y la administración.</p>
+          </form>
+        </div>
+      </section>
+
+      <section id="sec-ruidos" hidden>
+        <div class="card">
+          <h2>Reportar ruidos molestos</h2>
+          <p class="sub">Reporta ruidos excesivos que alteren la convivencia del condominio.</p>
+          <form id="ruido-form" novalidate>
+            <label>Título
+              <input type="text" id="ruido-titulo" required minlength="3" maxlength="200" placeholder="Título corto del reporte de ruido...">
+              <span class="char-counter" id="cnt-ruido-titulo">0 caracteres escritos (mínimo 3, máx. 200)</span>
+            </label>
+            <label>Descripción (mínimo 10 caracteres)
+              <textarea id="ruido-descripcion" required minlength="10" maxlength="2000" rows="4" placeholder="Describe la situación de ruido en detalle (mínimo 10 caracteres)..."></textarea>
+              <span class="char-counter" id="cnt-ruido-desc">0 caracteres escritos (mínimo 10, máx. 2000)</span>
+            </label>
+            <label class="check-label">
+              <input type="checkbox" id="ruido-guardia">
+              <span>Se informó a guardia</span>
+            </label>
+            <button class="btn primary" type="submit">Enviar reporte de ruido</button>
             <p class="privacy-note">🔒 Privacidad garantizada: Este reporte es confidencial y solo será visible para ti, el comité y la administración.</p>
           </form>
         </div>
