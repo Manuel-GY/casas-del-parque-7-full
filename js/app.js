@@ -968,7 +968,7 @@
           '<div class="empty-state-sub">Comparte tus ideas para mejorar la convivencia e instalaciones de tu comunidad.</div>' +
           '<button class="btn primary sm" type="button" id="btn-empty-sug">💡 Proponer una sugerencia</button>' +
         '</div>';
-      var bEmptyS = document.getElementById("btn-empty-sug");
+      var bEmptyS = wrap.querySelector(".btn");
       if (bEmptyS) bEmptyS.addEventListener("click", function () { mostrarSeccion("sec-sugerir"); });
       return;
     }
@@ -1014,7 +1014,7 @@
           '<div class="empty-state-sub">Informa situaciones de seguridad, luminarias, aseo u otras áreas de tu condominio.</div>' +
           '<button class="btn primary sm" type="button" id="btn-empty-reporte">➕ Crear mi primer reporte</button>' +
         '</div>';
-      var bEmptyR = document.getElementById("btn-empty-reporte");
+      var bEmptyR = wrap.querySelector(".btn");
       if (bEmptyR) bEmptyR.addEventListener("click", function () { mostrarSeccion("sec-nuevo"); });
       return;
     }
