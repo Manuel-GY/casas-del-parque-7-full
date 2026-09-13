@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manual de Funciones — Casas del Parque 7</title>
+<style>
+  :root {
+    --brand: #16a34a;
+    --brand-dark: #15803d;
+    --brand-deep: #14532d;
+    --mint: #dcfce7;
+    --amber: #f59e0b;
+    --red: #dc2626;
+    --gray: #64748b;
+    --ink: #1e293b;
+    --paper: #ffffff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Segoe UI", Roboto, system-ui, -apple-system, sans-serif;
+    color: var(--ink);
+    background: #e2e8f0;
+    line-height: 1.42;
+    font-size: 12.5px;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+  .page {
+    width: 210mm;
+    height: 297mm;
+    max-width: 100%;
+    margin: 0 auto;
+    background: var(--paper);
+    padding: 22px 32px 24px 32px;
+    box-sizing: border-box;
+    page-break-after: always;
+    break-after: page;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* COVER PAGE */
+  .cover {
+    background: linear-gradient(160deg, #0b3d2e 0%, #14532d 45%, #16a34a 100%);
+    color: #fff;
+    padding: 44px 40px 36px;
+    height: 297mm;
+    page-break-after: always;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+  }
+  .cover .logo {
+    width: 64px; height: 64px; border-radius: 18px; background: rgba(255,255,255,.14);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 6px; border: 1.5px solid rgba(255,255,255,.35);
+  }
+  .cover h1 { font-size: 38px; line-height: 1.05; font-weight: 800; letter-spacing: -.5px; margin-top: 6px; }
+  .cover .tagline { font-size: 15.5px; opacity: .92; margin-top: 8px; max-width: 150mm; }
+  .cover .meta {
+    margin-top: 22px; border-top: 1px solid rgba(255,255,255,.3); padding-top: 14px;
+    font-size: 12.5px; opacity: .9; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 20px;
+  }
+  .cover .meta b { display: block; font-size: 10.5px; letter-spacing: 1px; text-transform: uppercase; opacity: .7; }
+  .cover-art {
+    margin-top: auto; margin-bottom: 6px; border-radius: 16px; overflow: hidden;
+    background: linear-gradient(180deg, rgba(255,255,255,.10) 0%, rgba(255,255,255,.03) 100%);
+    border: 1px solid rgba(255,255,255,.22); box-shadow: 0 10px 28px rgba(0,0,0,.25);
+  }
+  .cover-art svg { display: block; width: 100%; height: auto; }
+
+  /* PAGE FOOTER */
+  .page-footer {
+    margin-top: auto;
+    padding-top: 6px;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 10px;
+    color: var(--gray);
+  }
+
+  /* HEADINGS & TEXT */
+  .kicker { color: var(--brand-dark); font-size: 10.5px; letter-spacing: 1.2px; text-transform: uppercase; font-weight: 700; margin-bottom: 2px; }
+  h2.sec {
+    font-size: 20px; color: var(--brand-deep); font-weight: 800;
+    margin-bottom: 2px; letter-spacing: -.3px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  h2.sec::before {
+    content: ""; width: 5px; height: 20px; border-radius: 3px;
+    background: linear-gradient(180deg, var(--brand), var(--brand-dark)); display: inline-block;
+  }
+  .lead { color: #334155; font-size: 13px; margin: 3px 0 10px; line-height: 1.4; }
+
+  h3.block {
+    font-size: 13.5px; font-weight: 800; color: var(--brand-deep);
+    margin: 8px 0 4px;
+  }
+  h3.block::after {
+    content: ""; display: block; width: 100%; height: 2px;
+    background: linear-gradient(90deg, var(--mint), transparent); margin-top: 2px; border-radius: 2px;
+  }
+
+  /* CARDS & TABLES */
+  .card {
+    background: #fff; border: 1px solid #e2e8f0; border-left: 4px solid var(--brand);
+    border-radius: 7px; padding: 8px 12px; margin: 6px 0;
+    box-shadow: 0 1px 3px rgba(15,23,42,.04); font-size: 12px;
+  }
+  .card.warn { border-left-color: var(--amber); background: #fffbeb; }
+  .card.danger { border-left-color: var(--red); background: #fef2f2; }
+  .card.info { border-left-color: #3b82f6; background: #eff6ff; }
+
+  ul.clean { list-style: none; margin-top: 3px; }
+  ul.clean li { display: flex; align-items: flex-start; gap: 7px; padding: 3px 0; border-bottom: 1px solid #f1f5f9; font-size: 11.5px; }
+  ul.clean li:last-child { border-bottom: none; }
+  ul.clean li::before { content: "✓"; color: var(--brand); font-weight: 800; font-size: 12px; line-height: 1.3; flex-shrink: 0; }
+  ul.clean li b { color: var(--brand-deep); }
+
+  table.tbl { width: 100%; border-collapse: collapse; margin: 6px 0; font-size: 11.5px; }
+  table.tbl th { background: var(--brand-deep); color: #fff; padding: 6px 8px; text-align: left; font-weight: 700; font-size: 11px; }
+  table.tbl td { padding: 5px 8px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+  table.tbl tr:nth-child(even) td { background: #f8fafc; }
+  table.tbl .tag { font-weight: 700; }
+  
+  .pill { display: inline-block; padding: 2px 7px; border-radius: 999px; font-size: 10px; font-weight: 700; }
+  .pill.vecino { background: #dcfce7; color: #166534; }
+  .pill.comite { background: #cffafe; color: #155e75; }
+  .pill.admin { background: #fde68a; color: #78350f; }
+  .pill.estado-nuevo { background: #fee2e2; color: #991b1b; }
+  .pill.estado-revision { background: #fef3c7; color: #92400e; }
+  .pill.estado-resuelto { background: #d1fae5; color: #065f46; }
+
+  /* SHOTS & GRIDS */
+  .shot {
+    margin: 6px 0; border-radius: 8px; overflow: hidden;
+    border: 1px solid #e2e8f0; box-shadow: 0 2px 6px rgba(15,23,42,.06);
+    background: #fff; display: flex; flex-direction: column;
+  }
+  .shot img {
+    display: block; width: auto; max-width: 100%; max-height: 68mm;
+    margin: 0 auto; object-fit: contain; object-position: top; background: #f8fafc;
+  }
+  .shot.hero-stats { margin: 8px 0; border-radius: 10px; border: 1.5px solid #cbd5e1; box-shadow: 0 4px 14px rgba(15,23,42,.12); background: #ffffff; }
+  .shot.hero-stats img { max-height: 105mm; width: 100%; object-fit: contain; object-position: top; background: #ffffff; }
+  .shot.large img { max-height: 85mm; width: 100%; object-fit: contain; object-position: top; }
+  .shot.medium img { max-height: 54mm; }
+  .shot.compact img { max-height: 44mm; }
+  .shot.mini img { max-height: 38mm; }
+  .shot figcaption {
+    padding: 5px 8px; font-size: 10.5px; color: var(--brand-deep);
+    background: linear-gradient(90deg,#f0fdf4,#fff); border-top: 1px solid #e2e8f0; font-weight: 600;
+  }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+  .grid2 .shot, .grid3 .shot { margin: 0; }
+
+  /* TOC ELEGANT PAGE 2 STYLING */
+  .toc-card-list { display: flex; flex-direction: column; gap: 7px; margin: 10px 0; }
+  .toc-item {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid var(--brand);
+    border-radius: 8px; padding: 9px 13px;
+  }
+  .toc-item .num {
+    min-width: 26px; height: 26px; background: var(--mint); color: var(--brand-deep);
+    font-weight: 800; border-radius: 6px; display: inline-flex; align-items: center;
+    justify-content: center; font-size: 13px; margin-right: 12px;
+  }
+  .toc-item .title-box { display: flex; flex-direction: column; flex-grow: 1; }
+  .toc-item .title-box b { font-size: 13px; color: var(--brand-deep); }
+  .toc-item .title-box span { font-size: 11px; color: var(--gray); margin-top: 1px; }
+  .toc-item .page-badge {
+    background: #fff; border: 1px solid #cbd5e1; color: var(--brand-deep);
+    font-weight: 700; font-size: 11px; padding: 3px 10px; border-radius: 999px;
+    white-space: nowrap; margin-left: 12px;
+  }
+
+  code { background: #f1f5f9; border: 1px solid #e2e8f0; padding: 1px 4px; border-radius: 4px; font-family: Consolas, monospace; font-size: 11px; color: #be123c; }
+  .mono { font-family: Consolas, monospace; font-size: 11px; }
+  .rpc-table td:first-child { font-family: Consolas, monospace; font-weight: 700; color: #14532d; white-space: nowrap; }
+</style>
+</head>
+<body>
+
+<!-- ================= HOJA 1: PORTADA ================= -->
+<div class="cover">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <div style="display:flex; align-items:center; gap:12px;">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" width="38" height="38" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="4.6" r="1.5" fill="#ffffff" stroke="none"></circle>
+          <path d="M2.8 11.6L12 3.5l9.2 8.1"></path>
+          <path d="M5.2 9.6v10.9h13.6V9.6"></path>
+          <path d="M9.7 20.5v-6h4.6v6"></path>
+        </svg>
+      </div>
+      <div>
+        <div style="font-size:17px; font-weight:800; letter-spacing:0.5px; color:#ffffff;">CASAS DEL PARQUE 7</div>
+        <div style="font-size:11px; opacity:0.85; letter-spacing:1px; text-transform:uppercase;">Condominio Residencial · Besalco Inmobiliaria</div>
+      </div>
+    </div>
+    <div style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.35); padding:5px 14px; border-radius:999px; font-size:11px; font-weight:700; color:#fde68a;">
+      DOCUMENTO OFICIAL
+    </div>
+  </div>
+
+  <div style="margin-top:20px;">
+    <div class="kicker" style="color:#6ee7b7; font-size:12px; letter-spacing:1.5px;">Manual de Funciones y Operación del Sistema</div>
+    <h1 style="font-size:38px; line-height:1.05; margin-top:4px;">Plataforma de Reportes & Gestiones Comunitaria</h1>
+    <p class="tagline" style="font-size:14px; margin-top:8px; opacity:0.92;">Guía de usuario e infraestructura técnica para residentes, comité de administración y soporte técnico.</p>
+  </div>
+
+  <div class="cover-art" style="margin-top:16px; border-radius:16px; border:2px solid rgba(255,255,255,0.35); overflow:hidden; box-shadow:0 14px 36px rgba(0,0,0,0.4); background:#fff;">
+    <img src="shots/cover_hero.jpg" alt="Casas del Parque 7 Besalco Real Photo" style="display:block; width:100%; height:auto; max-height:120mm; object-fit:cover; margin:0 auto;">
+  </div>
+
+  <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; margin-top:20px;">
+    <div style="background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.22); border-radius:10px; padding:12px; text-align:center;">
+      <div style="font-size:16px; margin-bottom:2px;">🏠</div>
+      <div style="font-size:11.5px; font-weight:700;">146 Casas</div>
+      <div style="font-size:10px; opacity:0.8;">San Bernardo</div>
+    </div>
+    <div style="background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.22); border-radius:10px; padding:12px; text-align:center;">
+      <div style="font-size:16px; margin-bottom:2px;">🛡️</div>
+      <div style="font-size:11.5px; font-weight:700;">RLS PostgreSQL</div>
+      <div style="font-size:10px; opacity:0.8;">Aislamiento total</div>
+    </div>
+    <div style="background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.22); border-radius:10px; padding:12px; text-align:center;">
+      <div style="font-size:16px; margin-bottom:2px;">📱</div>
+      <div style="font-size:11.5px; font-weight:700;">PWA Offline</div>
+      <div style="font-size:10px; opacity:0.8;">Instalable en móvil</div>
+    </div>
+    <div style="background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.22); border-radius:10px; padding:12px; text-align:center;">
+      <div style="font-size:16px; margin-bottom:2px;">📊</div>
+      <div style="font-size:11.5px; font-weight:700;">Excel / CSV</div>
+      <div style="font-size:10px; opacity:0.8;">Descarga segura</div>
+    </div>
+  </div>
+
+  <div class="meta" style="margin-top:auto; padding-top:14px; border-top:1px solid rgba(255,255,255,0.25);">
+    <div><b>Proyecto Realizado</b>Casas del Parque 7 (Besalco Inmobiliaria)</div>
+    <div><b>Ubicación</b>San Bernardo, Región Metropolitana</div>
+    <div><b>Versión del sistema</b>cdp7-v2.0.29</div>
+    <div><b>Audiencia</b>Vecinos, Comité y Administración</div>
+  </div>
+</div>
+
+<!-- ================= HOJA 2: ÍNDICE DEL MANUAL (1 PÁGINA DEDICADA) ================= -->
+<div class="page">
+  <div class="kicker">Navegación & Contenido</div>
+  <h2 class="sec">Índice del Manual</h2>
+  <p class="lead">Guía detallada de navegación por secciones para vecinos, comité y administración del condominio Casas del Parque 7.</p>
+
+  <div class="toc-card-list">
+    <div class="toc-item">
+      <span class="num">1</span>
+      <div class="title-box">
+        <b>Descripción general del sistema</b>
+        <span>Visión del proyecto, destinatario, capacidades principales y características técnicas.</span>
+      </div>
+      <span class="page-badge">Página 3</span>
+    </div>
+
+    <div class="toc-item">
+      <span class="num">2</span>
+      <div class="title-box">
+        <b>Roles y permisos</b>
+        <span>Perfiles de Vecino, Comité y Administración, accesos a pestañas y matriz de acciones.</span>
+      </div>
+      <span class="page-badge">Página 4</span>
+    </div>
+
+    <div class="toc-item">
+      <span class="num">3</span>
+      <div class="title-box">
+        <b>Acceso: login, registro y recuperación</b>
+        <span>Inicio de sesión, registro con cupo atómico de 2 vecinos/casa y recuperación de clave.</span>
+      </div>
+      <span class="page-badge">Página 5</span>
+    </div>
+
+    <div class="toc-item">
+      <span class="num">4</span>
+      <div class="title-box">
+        <b>Panel del Vecino</b>
+        <span>Página 1 de 2: Resumen inicial y formularios de Reportar/Sugerir.<br>Página 2 de 2: Historial de Mis Reportes/Sugerencias y Estadísticas agregadas.</span>
+      </div>
+      <span class="page-badge">Páginas 6 – 7</span>
+    </div>
+
+    <div class="toc-item">
+      <span class="num">5</span>
+      <div class="title-box">
+        <b>Panel de Comité y Administración</b>
+        <span>Página 1 de 2: Dashboard general e interfaz de Gestión de Reportes con KPIs.<br>Página 2 de 2: Tabla de estados, Gestión de Sugerencias, Estadísticas y Usuarios.</span>
+      </div>
+      <span class="page-badge">Páginas 8 – 9</span>
+    </div>
+
+    <div class="toc-item">
+      <span class="num">6</span>
+      <div class="title-box">
+        <b>Funciones transversales del sistema</b>
+        <span>Campana de novedades (60s), fotos privadas en bucket, PWA instalable y exportación CSV.</span>
+      </div>
+      <span class="page-badge">Página 10</span>
+    </div>
+
+    <div class="toc-item">
+      <span class="num">7</span>
+      <div class="title-box">
+        <b>Seguridad y protección de datos</b>
+        <span>Aislamiento por RLS (Row Level Security), anti-spam, CSV desinfectado y borrado definitivo.</span>
+      </div>
+      <span class="page-badge">Página 11</span>
+    </div>
+
+    <div class="toc-item">
+      <span class="num">8</span>
+      <div class="title-box">
+        <b>Base de datos y arquitectura del proyecto</b>
+        <span>Página 1 de 2: Tablas de PostgreSQL y Funciones RPC.<br>Página 2 de 2: Estructura de archivos del repositorio y pila tecnológica.</span>
+      </div>
+      <span class="page-badge">Páginas 12 – 13</span>
+    </div>
+  </div>
+
+  <div class="card info" style="margin-top:auto;">
+    <h3 class="block" style="margin-top:0;">Ficha Informativa del Documento</h3>
+    <div class="grid2" style="font-size:11.5px; margin-top:4px;">
+      <div><b>Condominio:</b> Casas del Parque 7 (146 propiedades)</div>
+      <div><b>Versión del sistema:</b> cdp7-v2.0.29</div>
+      <div><b>Generado con:</b> Capturas reales del sistema</div>
+      <div><b>Audiencia:</b> Vecinos, Comité y Administración</div>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span>Casas del Parque 7 — Manual de Funciones v2.0.29</span>
+    <span>Página 2 de 13</span>
+  </div>
+</div>
+
+<!-- ================= HOJA 3: SECCIÓN 1 - DESCRIPCIÓN GENERAL ================= -->
+<div class="page">
+  <div class="kicker">Sección 1</div>
+  <h2 class="sec">Descripción general del sistema</h2>
+  <p class="lead">La plataforma digital oficial del condominio Casas del Parque 7 (146 casas) permite a los vecinos reportar situaciones, proponer sugerencias y a la administración gestionarlas con total transparencia.</p>
+
+  <div class="card info" style="margin-bottom:8px;">
+    <h3 class="block" style="margin-top:0;">¿Qué es Casas del Parque 7 Digital?</h3>
+    <p>Es una aplicación web progresiva (PWA) de servidor cero impulsada por PostgreSQL / Supabase, diseñada para conectar de forma directa a los 146 propietarios con la administración y el comité de convivencia.</p>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h3 class="block">¿Qué permite hacer?</h3>
+      <ul class="clean">
+        <li><b>Reportar</b> en 8 categorías (seguridad, instalaciones, plazas, calles, luminarias, aseo, estacionamientos, otros + ruidos).</li>
+        <li><b>Sugerir</b> mejoras comunitarias con fotos.</li>
+        <li><b>Adjuntar 1 foto</b> privada por solicitud.</li>
+        <li><b>Historial propio</b>: cada vecino ve solo sus solicitudes y respuestas oficiales.</li>
+        <li><b>Gestión completa</b> para comité y admin: estados, respuestas y archivado.</li>
+        <li><b>Estadísticas</b> anónimas con exportación a Excel / CSV.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3 class="block">Características técnicas</h3>
+      <ul class="clean">
+        <li><b>Servidor cero</b>: frontend estático sin servidor propio.</li>
+        <li><b>Backend Supabase</b> (PostgreSQL) con seguridad RLS.</li>
+        <li><b>PWA instalable</b>: funciona offline en teléfonos.</li>
+        <li><b>Notificaciones internas</b>: campana de novedades en tiempo real.</li>
+        <li><b>Exportación CSV segura</b> compatible con Microsoft Excel.</li>
+        <li><b>Cupo de 2 vecinos por casa</b> validado en BD.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card warn" style="margin-top:8px;">
+    <b>Destinatario de este manual.</b> Este documento describe todas las funciones del sistema con especial énfasis en el panel de administración, para permitir una gestión fluida de reportes, sugerencias, estadísticas y usuarios.
+  </div>
+
+  <div class="card" style="margin-top:auto;">
+    <h3 class="block" style="margin-top:0;">Beneficios Clave para la Comunidad</h3>
+    <div class="grid2" style="font-size:11.5px; margin-top:4px;">
+      <div><b>Transparencia:</b> Seguimiento en tiempo real de cada reporte.</div>
+      <div><b>Privacidad:</b> Datos personales invisibles para otros vecinos.</div>
+      <div><b>Eficiencia:</b> Respuesta rápida por parte de la administración.</div>
+      <div><b>Respaldo:</b> Historial auditable de toda la gestión comunitaria.</div>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span>Casas del Parque 7 — Manual de Funciones v2.0.29</span>
+    <span>Página 3 de 13</span>
+  </div>
+</div>
+
+<!-- ================= HOJA 4: SECCIÓN 2 - ROLES Y PERMISOS ================= -->
+<div class="page">
+  <div class="kicker">Sección 2</div>
+  <h2 class="sec">Roles y permisos</h2>
+  <p class="lead">La plataforma cuenta con tres roles diferenciados. La navegación y las acciones disponibles cambian automáticamente según el rol con el que se inicie sesión.</p>
+
+  <h3 class="block">Los 3 Roles del Sistema</h3>
+  <table class="tbl">
+    <tr><th style="width:130px;">Rol</th><th style="width:230px;">Acceso a pestañas</th><th>Acciones principales</th></tr>
+    <tr>
+      <td><span class="pill vecino">Vecino</span></td>
+      <td>Resumen, Reportar, Sugerir, Mis Reportes, Mis Sugerencias, Estadísticas.</td>
+      <td>Crear reportes y sugerencias con foto; consultar únicamente sus propias solicitudes y novedades.</td>
+    </tr>
+    <tr>
+      <td><span class="pill comite">Comité</span></td>
+      <td>Reportes, Sugerencias, Estadísticas (comunidad completa).</td>
+      <td>Visualizar todas las solicitudes de la comunidad, cambiar estados, responder a vecinos y archivar.</td>
+    </tr>
+    <tr>
+      <td><span class="pill admin">Administración</span></td>
+      <td>Todo lo anterior + Panel de Usuarios.</td>
+      <td>Gestión global + asignación de roles a perfiles y borrado definitivo de registros.</td>
+    </tr>
+  </table>
+
+  <h3 class="block" style="margin-top:14px;">Matriz de permisos por acción</h3>
+  <table class="tbl">
+    <tr><th>Acción en la plataforma</th><th style="text-align:center;">Vecino</th><th style="text-align:center;">Comité</th><th style="text-align:center;">Admin</th></tr>
+    <tr><td>Crear reporte o sugerencia propia</td><td style="text-align:center; color:var(--brand); font-weight:800;">✔</td><td style="text-align:center;">–</td><td style="text-align:center;">–</td></tr>
+    <tr><td>Ver sus propios reportes y sugerencias</td><td style="text-align:center; color:var(--brand); font-weight:800;">✔</td><td style="text-align:center;">–</td><td style="text-align:center;">–</td></tr>
+    <tr><td>Ver todos los reportes y sugerencias de la comunidad</td><td style="text-align:center;">–</td><td style="text-align:center; color:var(--brand); font-weight:800;">✔</td><td style="text-align:center; color:var(--brand); font-weight:800;">✔</td></tr>
+    <tr><td>Cambiar estado (En revisión / Resuelto) y enviar respuesta</td><td style="text-align:center;">–</td><td style="text-align:center; color:var(--brand); font-weight:800;">✔</td><td style="text-align:center; color:var(--brand); font-weight:800;">✔</td></tr>
+    <tr><td>Archivar registros (ocultar de la vista activa)</td><td style="text-align:center;">–</td><td style="text-align:center; color:var(--brand); font-weight:800;">✔</td><td style="text-align:center; color:var(--brand); font-weight:800;">✔</td></tr>
+    <tr><td>Borrar definitivamente registros</td><td style="text-align:center;">–</td><td style="text-align:center;">–</td><td style="text-align:center; color:var(--brand); font-weight:800;">✔</td></tr>
+    <tr><td>Asignar o modificar roles de los usuarios</td><td style="text-align:center;">–</td><td style="text-align:center;">–</td><td style="text-align:center; color:var(--brand); font-weight:800;">✔</td></tr>
+    <tr><td>Exportar estadísticas y listas a CSV / Excel</td><td style="text-align:center; color:var(--brand); font-weight:800;">✔</td><td style="text-align:center; color:var(--brand); font-weight:800;">✔</td><td style="text-align:center; color:var(--brand); font-weight:800;">✔</td></tr>
+  </table>
+
+  <div class="card warn" style="margin-top:14px;">
+    <b>Nota de flujo de roles.</b> Un usuario promovido a <span class="pill comite">Comité</span> o <span class="pill admin">Admin</span> deja de ver la pestaña "Reportar" (los reportes son creados exclusivamente por los vecinos) y pasa a la vista de gestión comunitaria. Solo la administración (<code>admin</code>) puede modificar roles.
+  </div>
+
+  <div class="page-footer">
+    <span>Casas del Parque 7 — Manual de Funciones v2.0.29</span>
+    <span>Página 4 de 13</span>
+  </div>
+</div>
+
+<!-- ================= HOJA 5: SECCIÓN 3 - ACCESO ================= -->
+<div class="page">
+  <div class="kicker">Sección 3</div>
+  <h2 class="sec">Acceso: login, registro y recuperación</h2>
+  <p class="lead">Punto de entrada seguro a la plataforma. Permite iniciar sesión, registrar nuevos vecinos validados por casa y recuperar contraseñas.</p>
+
+  <div class="grid2">
+    <div>
+      <h3 class="block">1. Inicio de sesión</h3>
+      <p style="font-size:11.5px; margin-bottom:4px;">Se ingresa con correo y contraseña. Si la cuenta fue creada con contraseña por defecto, el sistema exige cambiarla antes de ingresar.</p>
+      <div class="shot medium">
+        <img src="shots/01-login.png" alt="Inicio de sesión">
+        <figcaption>Pantalla de inicio de sesión · Acceso directo a registro y recuperación.</figcaption>
+      </div>
+    </div>
+    <div>
+      <h3 class="block">2. Registro de vecinos</h3>
+      <p style="font-size:11.5px; margin-bottom:4px;">Registro abierto: el vecino selecciona su casa (1 a 146). La BD valida automáticamente el cupo máximo de 2 vecinos por casa con anti-spam.</p>
+      <div class="shot medium">
+        <img src="shots/03-registro.png" alt="Registro de vecinos">
+        <figcaption>Formulario de registro · Selector de casa con cupos en tiempo real.</figcaption>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid2" style="margin-top:8px;">
+    <div>
+      <h3 class="block">3. Recuperación de contraseña</h3>
+      <p style="font-size:11.5px; margin-bottom:4px;">El vecino solicita un enlace a su correo registrado para restablecer su clave de forma segura sin intervención de terceros.</p>
+      <div class="shot medium">
+        <img src="shots/02-recuperar-clave.png" alt="Recuperación de clave">
+        <figcaption>Vista de recuperación · Enlace directo enviado al email.</figcaption>
+      </div>
+    </div>
+    <div>
+      <h3 class="block">Cuenta de demostración</h3>
+      <p style="font-size:11.5px; margin-bottom:6px;">Credenciales de ejemplo utilizadas para la elaboración de este manual y pruebas del panel:</p>
+      <table class="tbl">
+        <tr><th>Rol</th><th>Correo</th><th>Propósito</th></tr>
+        <tr>
+          <td><span class="pill admin">Admin</span></td>
+          <td class="mono">demo@casasdelparque.cl</td>
+          <td>Cuenta demo para administración y comité.</td>
+        </tr>
+      </table>
+      <div class="card info" style="margin-top:10px;">
+        <b>Control de cupos atómico.</b> El registro previene que se registren más de 2 vecinos en la misma casa mediante un candado atómico en la base de datos Supabase.
+      </div>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span>Casas del Parque 7 — Manual de Funciones v2.0.29</span>
+    <span>Página 5 de 13</span>
+  </div>
+</div>
+
+<!-- ================= HOJA 6: SECCIÓN 4 - PANEL VECINO (PÁGINA 1 DE 2) ================= -->
+<div class="page">
+  <div class="kicker">Sección 4</div>
+  <h2 class="sec">Panel del Vecino — Página 1 de 2: Resumen y Formularios</h2>
+  <p class="lead">Vista principal para residentes del condominio. Permite revisar el estado general de la comunidad y enviar reportes o sugerencias.</p>
+
+  <h3 class="block">Resumen inicial (pestaña inicial)</h3>
+  <p style="font-size:11.5px; margin-bottom:4px;">El vecino accede a un panel con el contador de sus solicitudes personales (abiertas y resueltas) junto a métricas generales del condominio.</p>
+  <div class="shot compact">
+    <img src="shots/10-vecino-resumen.png" alt="Resumen del vecino">
+    <figcaption>Resumen del vecino · Métricas personales y comunitarias agregadas.</figcaption>
+  </div>
+
+  <h3 class="block" style="margin-top:8px;">Formulario "Reportar"</h3>
+  <p style="font-size:11.5px; margin-bottom:4px;">Permite ingresar incidencias seleccionando entre 8 categorías (seguridad, luminarias, ruidos, etc.), título, descripción y 1 foto adjunta opcional.</p>
+  <div class="grid2">
+    <div class="shot compact">
+      <img src="shots/11-vecino-reportar.png" alt="Formulario reportar">
+      <figcaption>Formulario de reporte · Campos de categoría, título y adjunto.</figcaption>
+    </div>
+    <div class="shot compact">
+      <img src="shots/12-vecino-reportar-categoria.png" alt="Selección de categoría">
+      <figcaption>Categoría Ruidos · Aviso de notificación a la guardia.</figcaption>
+    </div>
+  </div>
+
+  <h3 class="block" style="margin-top:8px;">Formulario "Sugerir"</h3>
+  <p style="font-size:11.5px; margin-bottom:4px;">Espacio para proponer mejoras en la infraestructura o convivencia del condominio, con soporte de foto adjunta.</p>
+  <div class="shot mini">
+    <img src="shots/13-vecino-sugerir.png" alt="Formulario sugerir">
+    <figcaption>Formulario "Sugerir" · Propuestas comunitarias para el comité.</figcaption>
+  </div>
+
+  <div class="page-footer">
+    <span>Casas del Parque 7 — Manual de Funciones v2.0.29</span>
+    <span>Página 6 de 13</span>
+  </div>
+</div>
+
+<!-- ================= HOJA 7: SECCIÓN 4 - PANEL VECINO (PÁGINA 2 DE 2) ================= -->
+<div class="page">
+  <div class="kicker">Sección 4</div>
+  <h2 class="sec">Panel del Vecino — Página 2 de 2: Historial y Estadísticas</h2>
+  <p class="lead">Gestión privada de solicitudes enviadas y consulta transparente de estadísticas comunitarias.</p>
+
+  <h3 class="block">Mis Reportes y Mis Sugerencias</h3>
+  <p style="font-size:11.5px; margin-bottom:4px;">Historial 100% privado. Cada vecino ve únicamente sus solicitudes enviadas, la fecha, el estado actualizado por la administración y la respuesta emitida.</p>
+  <div class="grid2">
+    <div class="shot medium">
+      <img src="shots/14-vecino-mis-reportes.png" alt="Mis reportes">
+      <figcaption>"Mis Reportes" · Estado actual y respuestas de la administración.</figcaption>
+    </div>
+    <div class="shot medium">
+      <img src="shots/15-vecino-mis-sugerencias.png" alt="Mis sugerencias">
+      <figcaption>"Mis Sugerencias" · Seguimiento de propuestas personales.</figcaption>
+    </div>
+  </div>
+
+  <h3 class="block" style="margin-top:8px;">Estadísticas comunitarias (vista vecino)</h3>
+  <p style="font-size:11.5px; margin-bottom:4px;">Gráficos interactivos agregados sobre el estado de reportes y sugerencias en la comunidad, exportables a Excel/CSV.</p>
+  <div class="shot hero-stats">
+    <img src="shots/16-vecino-estadisticas.png" alt="Estadísticas vecino">
+    <figcaption>Estadísticas agregadas del vecino · Vista ampliada de gráficos y totales comunitarios.</figcaption>
+  </div>
+
+  <div class="card warn" style="margin-top:6px;">
+    <b>Garantía de privacidad.</b> Los vecinos nunca tienen acceso a los nombres, casas o reportes de otros vecinos. El backend PostgreSQL aísla estrictamente las consultas de cada residente.
+  </div>
+
+  <div class="page-footer">
+    <span>Casas del Parque 7 — Manual de Funciones v2.0.29</span>
+    <span>Página 7 de 13</span>
+  </div>
+</div>
+
+<!-- ================= HOJA 8: SECCIÓN 5 - PANEL ADMIN (PÁGINA 1 DE 2) ================= -->
+<div class="page">
+  <div class="kicker">Sección 5</div>
+  <h2 class="sec">Panel de Comité y Administración — Página 1 de 2: Dashboard y Reportes</h2>
+  <p class="lead">Centro de mando exclusivo para los roles <span class="pill comite">Comité</span> y <span class="pill admin">Admin</span>. Permite gestionar todas las incidencias del condominio.</p>
+
+  <h3 class="block">Dashboard general de administración</h3>
+  <p style="font-size:11.5px; margin-bottom:4px;">Visión global e indicadores clave: vecinos registrados, casas ocupadas, total de reportes pendientes y resueltos.</p>
+  <div class="shot compact">
+    <img src="shots/04-dashboard-admin.png" alt="Dashboard admin">
+    <figcaption>Dashboard principal · Cifras comunitarias consolidadas en tiempo real.</figcaption>
+  </div>
+
+  <h3 class="block" style="margin-top:8px;">Gestionar Reportes & Estados de Solicitud</h3>
+  <p style="font-size:11.5px; margin-bottom:4px;">Panel de control avanzado con herramientas de filtrado y atención de incidencias:</p>
+  <div class="grid2">
+    <div>
+      <ul class="clean">
+        <li><b>KPIs clicables</b>: Filtrado instantáneo por Nuevo, En revisión o Resuelto.</li>
+        <li><b>Buscador en tiempo real</b>: Por palabra clave, folio, detalle o casa.</li>
+        <li><b>Respuesta al vecino</b>: Campo de texto con explicación oficial.</li>
+        <li><b>Ver foto adjunta</b>: Evidencia fotográfica enviada por el vecino.</li>
+        <li><b>Limpieza</b>: Archivar u opción de borrado definitivo (solo admin).</li>
+      </ul>
+    </div>
+    <div>
+      <table class="tbl" style="margin:0;">
+        <tr><th>Estado</th><th>Significado e impacto</th></tr>
+        <tr><td><span class="pill estado-nuevo">Nuevo</span></td><td>Ingresado sin gestión previa.</td></tr>
+        <tr><td><span class="pill estado-revision">En revisión</span></td><td>En proceso de atención.</td></tr>
+        <tr><td><span class="pill estado-resuelto">Resuelto</span></td><td>Atendido; elimina foto adjunta.</td></tr>
+        <tr><td><span class="pill admin">Archivado</span></td><td>Oculto de lista activa.</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="shot compact" style="margin-top:6px;">
+    <img src="shots/05-admin-reportes.png" alt="Panel de reportes admin">
+    <figcaption>Panel de Reportes · Tabla interactiva con filtros, cambio de estado y exportación CSV.</figcaption>
+  </div>
+
+  <div class="page-footer">
+    <span>Casas del Parque 7 — Manual de Funciones v2.0.29</span>
+    <span>Página 8 de 13</span>
+  </div>
+</div>
+
+<!-- ================= HOJA 9: SECCIÓN 5 - PANEL ADMIN (PÁGINA 2 DE 2) ================= -->
+<div class="page">
+  <div class="kicker">Sección 5</div>
+  <h2 class="sec">Panel de Comité y Administración — Página 2 de 2: Gestión, Usuarios y Estadísticas</h2>
+  <p class="lead">Gestión de sugerencias, control de perfiles de usuario y analítica avanzada con gráficos agregados del condominio.</p>
+
+  <div class="grid2">
+    <div>
+      <h3 class="block">Gestionar Sugerencias</h3>
+      <p style="font-size:11px; margin-bottom:4px;">Revisión de propuestas comunitarias, respuesta oficial y cambio de estado.</p>
+      <div class="shot mini">
+        <img src="shots/06-admin-sugerencias.png" alt="Sugerencias admin">
+        <figcaption>Panel de Sugerencias · Gestión de propuestas.</figcaption>
+      </div>
+    </div>
+    <div>
+      <h3 class="block">Usuarios (solo Admin)</h3>
+      <p style="font-size:11px; margin-bottom:4px;">Asignación de roles a perfiles registrados (Vecino / Comité / Admin).</p>
+      <div class="shot mini">
+        <img src="shots/08-admin-usuarios.png" alt="Usuarios admin">
+        <figcaption>Panel de Usuarios · Gestión de roles por perfil.</figcaption>
+      </div>
+    </div>
+  </div>
+
+  <h3 class="block" style="margin-top:8px;">Estadísticas de administración (Alta Definición)</h3>
+  <p style="font-size:11.5px; margin-bottom:4px;">Analítica completa en alta resolución: gráficos por categoría, severidad, mes y distribución por casa de toda la comunidad.</p>
+  <div class="shot hero-stats">
+    <img src="shots/07-admin-estadisticas.png" alt="Estadísticas admin">
+    <figcaption>Estadísticas de Administración · Vista ampliada de gráficos Canvas y métricas agregadas.</figcaption>
+  </div>
+
+  <div class="page-footer">
+    <span>Casas del Parque 7 — Manual de Funciones v2.0.29</span>
+    <span>Página 9 de 13</span>
+  </div>
+</div>
+
+<!-- ================= HOJA 10: SECCIÓN 6 - FUNCIONES TRANSVERSALES ================= -->
+<div class="page">
+  <div class="kicker">Sección 6</div>
+  <h2 class="sec">Funciones transversales del sistema</h2>
+  <p class="lead">Características técnicas y funcionales que operan de forma transversal para todos los usuarios de la plataforma.</p>
+
+  <div class="grid2">
+    <div>
+      <h3 class="block">Campana de novedades</h3>
+      <p style="font-size:11.5px; margin-bottom:4px;">Sistema interno de notificaciones (sin depender de correos o push). Revisa novedades cada 60s. Marca tarjetas en amarillo al haber cambios de estado o respuestas.</p>
+      <div class="shot medium">
+        <img src="shots/09-novedades.png" alt="Novedades">
+        <figcaption>Pestaña Novedades · Notificaciones internas con fotos ampliables.</figcaption>
+      </div>
+    </div>
+    <div>
+      <h3 class="block">Fotos adjuntas y privacidad</h3>
+      <div class="card">
+        <ul class="clean">
+          <li><b>1 foto por solicitud</b>: Almacenada en bucket privado Supabase.</li>
+          <li><b>Acceso restringido</b>: Solo el autor y la administración pueden verla.</li>
+          <li><b>Formato e imagen</b>: Admite imágenes de hasta 5 MB.</li>
+          <li><b>Eliminación automática</b>: Al marcar como Resuelto/Resuelta, la foto se borra permanentemente del servidor para liberar espacio y proteger la privacidad.</li>
+        </ul>
+      </div>
+
+      <h3 class="block" style="margin-top:8px;">PWA instalable y experiencia móvil</h3>
+      <div class="card">
+        <ul class="clean">
+          <li><b>Instalable en smartphone</b>: Se agrega a la pantalla de inicio desde Chrome/Safari.</li>
+          <li><b>Shell offline</b>: Mantiene la interfaz cargada aun sin conexión a internet.</li>
+          <li><b>Navegación inferior</b>: Barra táctil adaptada para uso fácil con una sola mano.</li>
+          <li><b>Anti auto-zoom</b>: Controles de 16px optimizados para iOS / Android.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <h3 class="block" style="margin-top:10px;">Exportación segura a Excel / CSV</h3>
+  <div class="card info">
+    <p>Todos los listados de reportes, sugerencias y estadísticas se pueden descargar en formato <code>.csv</code> (UTF-8 con BOM para apertura directa en Microsoft Excel). La descarga cuenta con <b>desinfección automática de fórmulas</b>: cualquier texto que comience con <code>=</code>, <code>+</code>, <code>-</code> o <code>@</code> se escapa para evitar ejecuciones maliciosas en planillas.</p>
+  </div>
+
+  <div class="page-footer">
+    <span>Casas del Parque 7 — Manual de Funciones v2.0.29</span>
+    <span>Página 10 de 13</span>
+  </div>
+</div>
+
+<!-- ================= HOJA 11: SECCIÓN 7 - SEGURIDAD Y PROTECCIÓN DE DATOS ================= -->
+<div class="page">
+  <div class="kicker">Sección 7</div>
+  <h2 class="sec">Seguridad y protección de datos</h2>
+  <p class="lead">El modelo de seguridad descansa en RLS (Row Level Security) de PostgreSQL: la base de datos, y no el navegador, garantiza que cada usuario acceda únicamente a los datos autorizados.</p>
+
+  <h3 class="block">Mecanismos de seguridad implementados</h3>
+  <table class="tbl">
+    <tr><th style="width:190px;">Mecanismo</th><th>Descripción técnica y funcionamiento</th></tr>
+    <tr>
+      <td class="tag">Aislamiento de datos (RLS)</td>
+      <td>Los vecinos solo consultan sus propios registros (<code>creado_por = auth.uid()</code>). Comité y admin acceden mediante funciones RPC con validación estricta de rol.</td>
+    </tr>
+    <tr>
+      <td class="tag">Cupo de casas atómico</td>
+      <td>La función <code class="mono">registrar_perfil</code> reserva las plazas por casa (máx 2) con bloqueos de asesoría de PostgreSQL, evitando dobles asignaciones simultáneas.</td>
+    </tr>
+    <tr>
+      <td class="tag">Anti-spam de registro</td>
+      <td>Trigger sobre <code>auth.users</code> que limita a máximo 10 intentos de registro por correo por hora mediante la tabla <code>intentos_registro</code>.</td>
+    </tr>
+    <tr>
+      <td class="tag">Bucket de fotos privado</td>
+      <td>Almacenamiento privado: lectura restringida al autor y admin mediante URL firmadas con expiración temporal. Reglas: solo imágenes de hasta 5 MB.</td>
+    </tr>
+    <tr>
+      <td class="tag">Sin secretos en frontend</td>
+      <td>La anon key es pública por diseño; el 100% de los permisos de lectura, escritura y actualización son forzados en PostgreSQL.</td>
+    </tr>
+    <tr>
+      <td class="tag">CSV seguro anti-injection</td>
+      <td>Exportador que limpia prefijos de fórmulas (<code>=</code>, <code>+</code>, <code>-</code>, <code>@</code>) para evitar la ejecución de código en Microsoft Excel.</td>
+    </tr>
+    <tr>
+      <td class="tag">Cabeceras HTTP y CSP</td>
+      <td>Content-Security-Policy estricto por <code>&lt;meta&gt;</code> y cabeceras de servidor Vercel (<code>nosniff</code>, <code>X-Frame-Options</code>, <code>Permissions-Policy</code>).</td>
+    </tr>
+    <tr>
+      <td class="tag">Cambio clave obligatorio</td>
+      <td>Cuentas creadas por la administración con clave genérica son forzadas a renovarla inmediatamente en su primer ingreso.</td>
+    </tr>
+  </table>
+
+  <div class="card danger" style="margin-top:12px;">
+    <b>Acciones irreversibles y borrado de datos.</b> Al marcar una incidencia como <b>Resuelto/Resuelta</b>, la foto adjunta se destruye de forma permanente. El archivado oculta las solicitudes de la vista común, mientras que el <b>borrado definitivo</b> (exclusivo del administrador) elimina la fila de la BD sin posibilidad de recuperación. Todas estas acciones solicitan confirmación previa.
+  </div>
+
+  <div class="page-footer">
+    <span>Casas del Parque 7 — Manual de Funciones v2.0.29</span>
+    <span>Página 11 de 13</span>
+  </div>
+</div>
+
+<!-- ================= HOJA 12: SECCIÓN 8 - BASE DE DATOS (PÁGINA 1 DE 2) ================= -->
+<div class="page">
+  <div class="kicker">Sección 8</div>
+  <h2 class="sec">Base de datos — Página 1 de 2: Tablas y Funciones RPC</h2>
+  <p class="lead">Especificación técnica del backend Supabase / PostgreSQL para referencia de la administración y soporte técnico.</p>
+
+  <h3 class="block">Tablas de la base de datos</h3>
+  <table class="tbl">
+    <tr><th style="width:140px;">Tabla</th><th>Propósito y contenido</th></tr>
+    <tr><td class="mono">casas</td><td>Catálogo de las 146 casas numeradas del condominio Casas del Parque 7.</td></tr>
+    <tr><td class="mono">profiles</td><td>Perfil de cada usuario: nombre, casa, rol (<code>vecino</code>, <code>comite</code>, <code>admin</code>), cambio de clave pendiente, último acceso.</td></tr>
+    <tr><td class="mono">reclamos</td><td>Reportes de la comunidad: categoría, severidad, título, descripción, estado, respuesta, fotos y casilla de guardia.</td></tr>
+    <tr><td class="mono">sugerencias</td><td>Sugerencias de mejora: título, descripción, estado, respuesta y fotos.</td></tr>
+    <tr><td class="mono">intentos_registro</td><td>Registro anti-spam de intentos de creación de cuenta por correo electrónico.</td></tr>
+    <tr><td class="mono">storage.objects</td><td>Bucket privado <code>reportes</code> con los archivos fotográficos adjuntos.</td></tr>
+  </table>
+
+  <h3 class="block" style="margin-top:10px;">Funciones de procedimiento remoto (RPC)</h3>
+  <table class="tbl rpc-table">
+    <tr><th style="width:38%;">Función RPC</th><th style="width:24%;">Acceso</th><th>Propósito</th></tr>
+    <tr><td>mi_rol() / mi_casa()</td><td>Authenticated</td><td>Devuelven el rol y la casa del usuario activo para validar interfaz.</td></tr>
+    <tr><td>registrar_perfil()</td><td>Vecino autenticado</td><td>Crea el perfil de vecino verificando el cupo atómico de 2 por casa.</td></tr>
+    <tr><td>cupos_por_casa()</td><td>Público</td><td>Devuelve el número de vecinos registrados por casa para la interfaz.</td></tr>
+    <tr><td>asignar_rol()</td><td>Admin</td><td>Cambia el rol de un usuario en la tabla de perfiles.</td></tr>
+    <tr><td>marcar_clave_cambiada()</td><td>Authenticated</td><td>Actualiza la bandera de contraseña renovada tras el primer login.</td></tr>
+    <tr><td>mis_novedades()</td><td>Authenticated</td><td>Retorna las solicitudes del vecino modificadas en los últimos 3 días.</td></tr>
+    <tr><td>reclamos_detalle()</td><td>Comité / Admin</td><td>Lista completa de reportes con datos del autor y casa para gestión.</td></tr>
+    <tr><td>sugerencias_detalle()</td><td>Comité / Admin</td><td>Lista completa de sugerencias con autor y estado.</td></tr>
+    <tr><td>responder_reclamo()</td><td>Comité / Admin</td><td>Cambia estado, graba respuesta oficial y elimina la foto al resolver.</td></tr>
+    <tr><td>archivar_reclamo()</td><td>Comité / Admin</td><td>Realiza el archivado lógico (soft delete) del reporte.</td></tr>
+    <tr><td>borrar_reclamo()</td><td>Admin</td><td>Elimina físicamente el registro de la base de datos.</td></tr>
+    <tr><td>estadisticas()</td><td>Comité / Admin</td><td>Genera los datos agregados por mes, categoría, severidad y casa.</td></tr>
+  </table>
+
+  <div class="page-footer">
+    <span>Casas del Parque 7 — Manual de Funciones v2.0.29</span>
+    <span>Página 12 de 13</span>
+  </div>
+</div>
+
+<!-- ================= HOJA 13: SECCIÓN 8 - BASE DE DATOS (PÁGINA 2 DE 2) ================= -->
+<div class="page">
+  <div class="kicker">Sección 8</div>
+  <h2 class="sec">Base de datos — Página 2 de 2: Arquitectura del Proyecto</h2>
+  <p class="lead">Organización de archivos del repositorio, componentes del sistema y ficha de resumen técnico.</p>
+
+  <h3 class="block">Estructura de archivos del repositorio</h3>
+  <table class="tbl">
+    <tr><th style="width:210px;">Archivo / Directorio</th><th>Rol en la arquitectura del sistema</th></tr>
+    <tr><td class="mono">index.html</td><td>Pantalla pública de inicio de sesión, registro de vecinos, recuperación de clave y Política de Privacidad.</td></tr>
+    <tr><td class="mono">app.html</td><td>Panel principal spa (Resumen, Vecino, Comité, Admin), barra de navegación, modal de novedades y formularios.</td></tr>
+    <tr><td class="mono">css/style.css</td><td>Sistema de diseño completo: componentes visuales, glassmorphism, responsive móvil y barra fija inferior.</td></tr>
+    <tr><td class="mono">js/app.js</td><td>Lógica del panel dinámico: resumen, notificaciones, renderizado de listas, fotos y exportador CSV.</td></tr>
+    <tr><td class="mono">js/auth.js · index.js · stats.js</td><td>Conector Supabase, manejo de sesión, trazado de gráficos HTML5 Canvas y helpers puros.</td></tr>
+    <tr><td class="mono">sql/schema.sql</td><td>Script SQL idempotente completo: tablas, triggers, funciones SECURITY DEFINER y políticas RLS.</td></tr>
+    <tr><td class="mono">sw.js · manifest.webmanifest</td><td>Service Worker para soporte offline del shell y manifiesto de la aplicación PWA.</td></tr>
+    <tr><td class="mono">tests/</td><td>Suite de pruebas automatizadas en Node.js (helpers puros + pruebas smoke HTML/JS).</td></tr>
+  </table>
+
+  <h3 class="block" style="margin-top:12px;">Resumen de pila tecnológica</h3>
+  <div class="grid2">
+    <div class="card">
+      <h3 class="block" style="margin-top:0;">Frontend Estático (Serverless)</h3>
+      <ul class="clean">
+        <li>HTML5 + CSS3 Vanila (sin frameworks pesados).</li>
+        <li>JavaScript ES6+ modular.</li>
+        <li>PWA instalable (Manifest v3 + Service Worker).</li>
+        <li>Gráficos Canvas livianos nativos.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3 class="block" style="margin-top:0;">Backend BaaS (Supabase)</h3>
+      <ul class="clean">
+        <li>Base de datos PostgreSQL relacional.</li>
+        <li>Autenticación Supabase Auth + JWT.</li>
+        <li>Seguridad Row Level Security (RLS).</li>
+        <li>Storage privado para fotos de soporte.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card info" style="margin-top:10px; text-align:center; padding:12px;">
+    <b>Casas del Parque 7 — Plataforma de Gestión Comunitaria</b><br>
+    Manual de Funciones · Versión <code>cdp7-v2.0.29</code> · Documento generado con capturas reales y verificado.
+  </div>
+
+  <div class="page-footer">
+    <span>Casas del Parque 7 — Manual de Funciones v2.0.29</span>
+    <span>Página 13 de 13</span>
+  </div>
+</div>
+
+</body>
+</html>
