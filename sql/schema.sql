@@ -464,7 +464,7 @@ begin
   set estado      = p_estado,
       respuesta   = coalesce(p_respuesta, respuesta),
       atendido_por = auth.uid(),
-      resuelto_en = case when p_estado = 'resuelto' then now() else resuelto_en end,
+      resuelto_en = case when p_estado = 'resuelto' then now() else null end,
       fotos       = case when p_estado = 'resuelto' then '{}'::text[] else fotos end,
       updated_at  = now()
   where id = p_id;
@@ -569,14 +569,23 @@ returns void
 language plpgsql security definer
 set search_path = public
 as $$
+declare
+  v_fotos text[] := '{}';
 begin
   if coalesce(public.mi_rol(),'') <> 'admin' then
     raise exception 'Solo un administrador puede borrar reportes.';
   end if;
 
-  delete from public.reclamos where id = p_id;
+  select fotos into v_fotos from public.reclamos where id = p_id;
   if not found then
     raise exception 'Reclamo no encontrado.';
+  end if;
+
+  delete from public.reclamos where id = p_id;
+
+  if v_fotos is not null and cardinality(v_fotos) > 0 then
+    delete from storage.objects where bucket_id = 'reportes'
+      and name = any (v_fotos);
   end if;
 end;
 $$;
@@ -586,14 +595,23 @@ returns void
 language plpgsql security definer
 set search_path = public
 as $$
+declare
+  v_fotos text[] := '{}';
 begin
   if coalesce(public.mi_rol(),'') <> 'admin' then
     raise exception 'Solo un administrador puede borrar sugerencias.';
   end if;
 
-  delete from public.sugerencias where id = p_id;
+  select fotos into v_fotos from public.sugerencias where id = p_id;
   if not found then
     raise exception 'Sugerencia no encontrada.';
+  end if;
+
+  delete from public.sugerencias where id = p_id;
+
+  if v_fotos is not null and cardinality(v_fotos) > 0 then
+    delete from storage.objects where bucket_id = 'reportes'
+      and name = any (v_fotos);
   end if;
 end;
 $$;
@@ -647,8 +665,12 @@ language plpgsql stable security definer
 set search_path = public
 as $$
 declare
+  v_rol text := coalesce(public.mi_rol(), '');
   v_json jsonb;
 begin
+  if v_rol not in ('vecino','comite','admin') then
+    raise exception 'No autorizado';
+  end if;
   select jsonb_build_object(
     'total', (select count(*)::int from public.reclamos where not eliminado),
     'por_estado', (
@@ -801,7 +823,7 @@ create policy "reclamos_select_mios" on public.reclamos
 drop policy if exists "reclamos_select_comite" on public.reclamos;
 create policy "reclamos_select_comite" on public.reclamos
   for select to authenticated
-  using (coalesce(public.mi_rol(),'') in ('comite','admin'));
+  using (coalesce(public.mi_rol(),'') in ('comite','admin') and not eliminado);
 
 -- SUGERENCIAS INSERT: vecino crea sugerencias solo a su nombre y casa
 drop policy if exists "sugerencias_insert" on public.sugerencias;
@@ -825,7 +847,7 @@ create policy "sugerencias_select_mias" on public.sugerencias
 drop policy if exists "sugerencias_select_comite" on public.sugerencias;
 create policy "sugerencias_select_comite" on public.sugerencias
   for select to authenticated
-  using (coalesce(public.mi_rol(),'') in ('comite','admin'));
+  using (coalesce(public.mi_rol(),'') in ('comite','admin') and not eliminado);
 
 -- ============================================================
 -- 16) STORAGE — BUCKET PRIVADO "reportes" (fotos adjuntas)
@@ -902,8 +924,12 @@ language plpgsql stable security definer
 set search_path = public
 as $$
 declare
+  v_rol text := coalesce(public.mi_rol(), '');
   v_json jsonb;
 begin
+  if v_rol not in ('vecino','comite','admin') then
+    raise exception 'No autorizado';
+  end if;
   select jsonb_build_object(
     'total_casas',    (select count(*)::int from public.casas),
     'vecinos',        (select count(*)::int from public.profiles where rol = 'vecino'),

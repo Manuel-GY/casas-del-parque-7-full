@@ -24,6 +24,7 @@ var APP_SHELL = [
   "./js/app.js",
   "./js/stats.js",
   "./js/register-sw.js",
+  "./config.js",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
   "./icons/icon-maskable-512.png",
@@ -62,7 +63,6 @@ self.addEventListener("fetch", function (event) {
   }
 
   var url = new URL(req.url);
-  var path = url.pathname.replace(location.pathname.replace(/[^/]*$/, ""), "");
 
   // Navegaciones: red primero, con respaldo al shell cacheado (offline).
   // Se cachea bajo la ruta navegada para no confundir index.html y app.html.

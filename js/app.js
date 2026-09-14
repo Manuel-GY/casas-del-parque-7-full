@@ -299,61 +299,6 @@
       if (banner) banner.style.display = "none";
 
       if (vHero) {
-        if (!document.getElementById("vhero-rec-num")) {
-          vHero.innerHTML =
-            '<div class="vecino-hero-header">' +
-              '<div>' +
-                '<div class="vecino-hero-title">' +
-                  '<h3>🏡 Tu Espacio Comunitario</h3>' +
-                  '<span class="vecino-badge" id="vhero-casa-badge">' + (profile.numero_casa ? "Casa " + profile.numero_casa : "Vecino") + '</span>' +
-                '</div>' +
-                '<div class="vecino-hero-sub">Reportes y sugerencias confidenciales del condominio</div>' +
-              '</div>' +
-              '<div class="vecino-privacy-tag">' +
-                '<span>🔒 Privacidad Activa</span>' +
-              '</div>' +
-            '</div>' +
-            '<div class="vecino-kpi-grid">' +
-              '<div class="vecino-kpi-card" id="btn-kpi-rec" style="cursor:pointer;" title="Ver mis reportes">' +
-                '<div class="vecino-kpi-top">' +
-                  '<div class="vecino-kpi-icon icon-rec">' +
-                    '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' +
-                  '</div>' +
-                  '<span class="vecino-kpi-pill ok" id="vhero-rec-pill">...</span>' +
-                '</div>' +
-                '<div class="vecino-kpi-num" id="vhero-rec-num">-</div>' +
-                '<div class="vecino-kpi-lbl">Mis reportes</div>' +
-                '<div class="vecino-kpi-sub" id="vhero-rec-sub">Cargando datos...</div>' +
-              '</div>' +
-
-              '<div class="vecino-kpi-card" id="btn-kpi-sug" style="cursor:pointer;" title="Ver mis sugerencias">' +
-                '<div class="vecino-kpi-top">' +
-                  '<div class="vecino-kpi-icon icon-sug">' +
-                    '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>' +
-                  '</div>' +
-                  '<span class="vecino-kpi-pill voice">Tu voz cuenta</span>' +
-                '</div>' +
-                '<div class="vecino-kpi-num" id="vhero-sug-num">-</div>' +
-                '<div class="vecino-kpi-lbl">Mis sugerencias</div>' +
-                '<div class="vecino-kpi-sub" id="vhero-sug-sub">Cargando datos...</div>' +
-              '</div>' +
-
-              '<div class="vecino-kpi-card vecino-quick-actions">' +
-                '<div class="vecino-kpi-lbl" style="margin-bottom:8px;">Acciones rápidas</div>' +
-                '<div class="vecino-btn-group">' +
-                  '<button class="vecino-action-btn primary" id="btn-quick-report" type="button">' +
-                    '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>' +
-                    'Nuevo reporte' +
-                  '</button>' +
-                  '<button class="vecino-action-btn ghost" id="btn-quick-suggest" type="button">' +
-                    '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>' +
-                    'Sugerir' +
-                  '</button>' +
-                '</div>' +
-              '</div>' +
-            '</div>';
-        }
-
         vHero.hidden = false;
         var cBadge = document.getElementById("vhero-casa-badge");
         if (cBadge) cBadge.textContent = profile.numero_casa ? "Casa " + profile.numero_casa : "Vecino";
@@ -415,6 +360,7 @@
       var r = await SB.client.rpc("resumen_dashboard");
       banner.classList.remove("cargando");
       if (r.error) {
+        banner.style.display = "";
         var msje = SBH.esc(SBH.fmtErr(r.error.message));
         document.getElementById("resumen-banner").innerHTML = '<p class="hint">' + msje + "</p>";
         return;
@@ -428,7 +374,7 @@
       var totalSug = (e.sugerencias && e.sugerencias.total) || 0;
       var nuevasSug = (e.sugerencias && e.sugerencias.nueva) || 0;
 
-      var pctResueltos = totalRec > 0 ? Math.round((resueltosRec / totalRec) * 100) : 100;
+      var pctResueltos = totalRec > 0 ? Math.round((resueltosRec / totalRec) * 100) : 0;
       var rolNombre = rol === "admin" ? "Administración" : "Comité de Seguridad";
 
       // Renderizar Banner Ejecutivo de Administración

@@ -18,21 +18,6 @@
   "use strict";
 
   /**
-   * Puebla un <select> con opciones desde un mapa { clave: texto }.
-   */
-  function llenarOpciones(select, map, selKey) {
-    if (!select) return;
-    if (select.options.length) return;
-    Object.keys(map).forEach(function (k) {
-      var o = document.createElement("option");
-      o.value = k;
-      o.textContent = map[k];
-      if (selKey && k === selKey) o.selected = true;
-      select.appendChild(o);
-    });
-  }
-
-  /**
    * Alterna entre las vistas de Login y Registro.
    */
   function activarTab(btn) {
@@ -134,6 +119,7 @@
         return SB.client.rpc("registrar_perfil", { p_nombre: nombre, p_casa: casa, p_rol: "vecino" })
           .then(function (pr) {
             if (pr.error) {
+              cargando(btn, false, "Crear cuenta");
               SBH.mostrar("msg", "Cuenta creada pero faltó asociar tu casa: " + SBH.fmtErr(pr.error.message), "error");
               return null;
             }
@@ -189,12 +175,13 @@
     if (!SB.configOk) { SBH.mostrar("msg", configFallback(), "error"); return; }
 
     cargando(btn, true, "Guardando...");
-    var res = await SB.client.auth.updateUser({ password: p1 });
+    var res = await SB.client.auth.updateUser({ password: p1, data: { clave_cambiada: true } });
     cargando(btn, false, "Guardar nueva contraseña");
     if (res.error) {
       SBH.mostrar("msg", SBH.fmtErr(res.error.message), "error");
       return;
     }
+    try { await SB.client.rpc("marcar_clave_cambiada"); } catch (e) {}
     await SB.client.auth.signOut();
     document.getElementById("view-recovery").hidden = true;
     document.getElementById("view-login").hidden = false;
@@ -243,16 +230,17 @@
     if (!raw) return Promise.resolve();
     var pend = null;
     try { pend = JSON.parse(raw); } catch (e) { return Promise.resolve(); }
-    var ses = SB.client.auth.getSession();
-    var usr = ses && ses.data && ses.data.session ? ses.data.session.user : null;
-    if (!usr || !pend.email || pend.email !== usr.email) return Promise.resolve();
-    return SB.client.rpc("registrar_perfil", { p_nombre: pend.nombre, p_casa: pend.casa, p_rol: "vecino" })
-      .then(function (pr) {
-        try { localStorage.removeItem("cdp7_registro"); } catch (e) {}
-        if (pr.error) {
-          SBH.mostrar("msg", "Tu correo quedó confirmado, pero faltó asociar tu casa: " + SBH.fmtErr(pr.error.message), "error");
-        }
-      });
+    return SB.client.auth.getSession().then(function (sesRes) {
+      var usr = sesRes && sesRes.data && sesRes.data.session ? sesRes.data.session.user : null;
+      if (!usr || !pend.email || pend.email !== usr.email) return null;
+      return SB.client.rpc("registrar_perfil", { p_nombre: pend.nombre, p_casa: pend.casa, p_rol: "vecino" });
+    }).then(function (pr) {
+      if (!pr) return;
+      try { localStorage.removeItem("cdp7_registro"); } catch (e) {}
+      if (pr.error) {
+        SBH.mostrar("msg", "Tu correo quedó confirmado, pero faltó asociar tu casa: " + SBH.fmtErr(pr.error.message), "error");
+      }
+    });
   }
 
   /* ------------------------------------------------------------------ */
@@ -359,11 +347,12 @@
           if (!raw) return;
           var pend = null;
           try { pend = JSON.parse(raw); } catch (e) { return; }
-          var ses = SB.client.auth.getSession();
-          var usr = ses && ses.data && ses.data.session ? ses.data.session.user : null;
-          if (!usr || !pend.email || pend.email !== usr.email) return;
-          completarRegistroPendiente().then(function () {
-            window.location.href = "app.html";
+          SB.client.auth.getSession().then(function (sesRes) {
+            var usr = sesRes && sesRes.data && sesRes.data.session ? sesRes.data.session.user : null;
+            if (!usr || !pend.email || pend.email !== usr.email) return;
+            completarRegistroPendiente().then(function () {
+              window.location.href = "app.html";
+            });
           });
         }
       });
