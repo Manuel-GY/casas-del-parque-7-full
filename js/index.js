@@ -112,7 +112,7 @@
           // Email confirmation activo: guardar el registro pendiente para
           // completarlo (asociar casa) cuando el correo sea confirmado.
           try {
-            localStorage.setItem("cdp7_registro", JSON.stringify({ nombre: nombre, casa: casa, email: email }));
+            localStorage.setItem("cdp7_registro", JSON.stringify({ nombre: nombre, casa: casa, email: email, creadoEn: Date.now() }));
           } catch (e) {}
           return res;
         }
@@ -230,6 +230,10 @@
     if (!raw) return Promise.resolve();
     var pend = null;
     try { pend = JSON.parse(raw); } catch (e) { return Promise.resolve(); }
+    if (!PURE.esRegistroPendienteValido(pend)) {
+      try { localStorage.removeItem("cdp7_registro"); } catch (e) {}
+      return Promise.resolve();
+    }
     return SB.client.auth.getSession().then(function (sesRes) {
       var usr = sesRes && sesRes.data && sesRes.data.session ? sesRes.data.session.user : null;
       if (!usr || !pend.email || pend.email !== usr.email) return null;
@@ -250,6 +254,10 @@
   document.addEventListener("DOMContentLoaded", function () {
     var loginForm = document.getElementById("login-form");
     if (!loginForm) return;
+    if (new URLSearchParams(window.location.search).get("reason") === "session-expired") {
+      SBH.mostrar("msg", "Tu sesión se cerró por seguridad o inactividad. Vuelve a iniciar sesión.", "error");
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
 
     // Vincular pestaas Login / Registro
     var tabs = document.querySelectorAll("#auth-tabs .tab");
@@ -347,6 +355,11 @@
           if (!raw) return;
           var pend = null;
           try { pend = JSON.parse(raw); } catch (e) { return; }
+          if (!PURE.esRegistroPendienteValido(pend)) {
+            try { localStorage.removeItem("cdp7_registro"); } catch (e) {}
+            SBH.mostrar("msg", "El registro pendiente venció. Regístrate nuevamente para elegir tu casa.", "error");
+            return;
+          }
           SB.client.auth.getSession().then(function (sesRes) {
             var usr = sesRes && sesRes.data && sesRes.data.session ? sesRes.data.session.user : null;
             if (!usr || !pend.email || pend.email !== usr.email) return;

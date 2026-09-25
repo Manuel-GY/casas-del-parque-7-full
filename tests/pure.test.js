@@ -45,6 +45,22 @@ test("fmtErr traduce errores conocidos y devuelve otros tal cual", () => {
   assert.equal(PURE.fmtErr(null), "");
 });
 
+test("esErrorTransitorio solo acepta fallos seguros de reintentar", () => {
+  assert.equal(PURE.esErrorTransitorio(new Error("Failed to fetch")), true);
+  assert.equal(PURE.esErrorTransitorio("HTTP 503 service unavailable"), true);
+  assert.equal(PURE.esErrorTransitorio("JWT expired"), false);
+  assert.equal(PURE.esErrorTransitorio("permission denied"), false);
+});
+
+test("esRegistroPendienteValido exige datos completos y no vencidos", () => {
+  const ahora = 1_000_000;
+  const registro = { nombre: "Ana", email: "ana@ejemplo.cl", casa: 20, creadoEn: ahora - 1 };
+  assert.equal(PURE.esRegistroPendienteValido(registro, ahora), true);
+  assert.equal(PURE.esRegistroPendienteValido({ ...registro, creadoEn: ahora - PURE.REGISTRO_PENDIENTE_MAX_MS - 1 }, ahora), false);
+  assert.equal(PURE.esRegistroPendienteValido({ ...registro, casa: 147 }, ahora), false);
+  assert.equal(PURE.esRegistroPendienteValido({ ...registro, creadoEn: undefined }, ahora), false);
+});
+
 test("construirCSV escapa comas, comillas y produce cabecera", () => {
   const csv = PURE.construirCSV(
     [{ fecha: "01/01/24", nota: 'sillas, "de playa"' }],

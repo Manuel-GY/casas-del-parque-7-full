@@ -60,6 +60,14 @@
   var fotosRecl = [];        // File[] pendientes para el proximo reporte
   var fotosSug = [];         // File[] pendientes para la proxima sugerencia
   var MAX_FOTOS = 1;
+  var idleTimer = null;
+  var idleWarningTimer = null;
+  var authSubscription = null;
+  var inactivityBound = false;
+  var closingSession = false;
+  var fotoLastFocus = null;
+  var IDLE_TIMEOUT_MS = 30 * 60 * 1000;
+  var IDLE_WARNING_MS = 2 * 60 * 1000;
 
   /* ------------------------------------------------------------------ */
   /*  Helpers                                                            */
@@ -85,6 +93,87 @@
     });
   }
 
+  function esperar(ms) {
+    return new Promise(function (resolve) { setTimeout(resolve, ms); });
+  }
+
+  /**
+   * Reintenta exclusivamente lecturas que fallaron por un problema transitorio.
+   * Las escrituras no se reintentan para evitar duplicar acciones del usuario.
+   */
+  async function leerConReintento(lectura) {
+    var intento = 0;
+    var resultado;
+    do {
+      resultado = await lectura();
+      if (!resultado || !resultado.error || !PURE.esErrorTransitorio(resultado.error) || intento === 1) {
+        return resultado;
+      }
+      intento += 1;
+      await esperar(400 * intento);
+    } while (intento <= 1);
+    return resultado;
+  }
+
+  function limpiarEstadoPrivado() {
+    user = null;
+    profile = null;
+    rol = null;
+    recCache = [];
+    sugCache = [];
+    novEdades = [];
+    fotosRecl = [];
+    fotosSug = [];
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    document.querySelectorAll(".foto-thumb").forEach(function (img) {
+      img.removeAttribute("src");
+      img.removeAttribute("data-full-url");
+    });
+  }
+
+  async function cerrarSesion() {
+    if (closingSession) return;
+    closingSession = true;
+    if (idleTimer) clearTimeout(idleTimer);
+    if (idleWarningTimer) clearTimeout(idleWarningTimer);
+    limpiarEstadoPrivado();
+    try { await SB.client.auth.signOut(); } catch (e) {}
+    window.location.replace("index.html?reason=session-expired");
+  }
+
+  function reiniciarInactividad() {
+    if (!user || closingSession) return;
+    if (idleTimer) clearTimeout(idleTimer);
+    if (idleWarningTimer) clearTimeout(idleWarningTimer);
+    idleWarningTimer = setTimeout(function () {
+      SBH.mostrar("msg", "Tu sesión se cerrará en 2 minutos por inactividad. Interactúa con la aplicación para mantenerla abierta.", "error");
+    }, IDLE_TIMEOUT_MS - IDLE_WARNING_MS);
+    idleTimer = setTimeout(function () {
+      cerrarSesion();
+    }, IDLE_TIMEOUT_MS);
+  }
+
+  function iniciarControlInactividad() {
+    if (inactivityBound) {
+      reiniciarInactividad();
+      return;
+    }
+    inactivityBound = true;
+    ["pointerdown", "keydown", "touchstart", "scroll"].forEach(function (evento) {
+      document.addEventListener(evento, reiniciarInactividad, { passive: true });
+    });
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState === "visible") reiniciarInactividad();
+    });
+    reiniciarInactividad();
+  }
+
+  function manejarCambioAuth(event) {
+    if (event === "SIGNED_OUT" && !closingSession) {
+      cerrarSesion();
+    }
+  }
+
   /** Genera el HTML de miniaturas con data-foto para hidratar luego. */
   function fotosHtml(fotos) {
     var arr = fotos || [];
@@ -103,12 +192,15 @@
     var btnDownload = document.getElementById("btn-download-foto");
     if (!modal || !imgFull) return;
 
+    fotoLastFocus = document.activeElement;
     imgFull.src = src;
     if (btnDownload) {
       btnDownload.href = src;
     }
     modal.classList.remove("hidden");
     modal.setAttribute("aria-hidden", "false");
+    var close = document.getElementById("btn-close-foto");
+    if (close) close.focus();
   }
 
   function cerrarFotoModal() {
@@ -116,6 +208,7 @@
     if (!modal) return;
     modal.classList.add("hidden");
     modal.setAttribute("aria-hidden", "true");
+    if (fotoLastFocus && typeof fotoLastFocus.focus === "function") fotoLastFocus.focus();
   }
 
   function vincularFotoModal() {
@@ -134,6 +227,18 @@
     document.addEventListener("keydown", function (e) {
       if (e.key === "Escape" && !modal.classList.contains("hidden")) {
         cerrarFotoModal();
+      }
+      if (e.key !== "Tab" || modal.classList.contains("hidden")) return;
+      var focusables = modal.querySelectorAll("button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])");
+      if (!focusables.length) return;
+      var first = focusables[0];
+      var last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
       }
     });
   }
@@ -317,8 +422,8 @@
       }
 
       var res = await Promise.all([
-        SB.client.from("reclamos").select("estado").eq("creado_por", user.id).eq("eliminado", false),
-        SB.client.from("sugerencias").select("estado").eq("creado_por", user.id).eq("eliminado", false)
+        leerConReintento(function () { return SB.client.from("reclamos").select("estado").eq("creado_por", user.id).eq("eliminado", false); }),
+        leerConReintento(function () { return SB.client.from("sugerencias").select("estado").eq("creado_por", user.id).eq("eliminado", false); })
       ]);
       var qr = res[0];
       var qg = res[1];
@@ -357,7 +462,7 @@
       if (sugSub) sugSub.textContent = sugPendientes + " pendientes · " + sugResueltas + " resueltas";
     } else {
       // Admin/Comunidad: usa la RPC resumen_dashboard (agregados de toda la comunidad)
-      var r = await SB.client.rpc("resumen_dashboard");
+      var r = await leerConReintento(function () { return SB.client.rpc("resumen_dashboard"); });
       banner.classList.remove("cargando");
       if (r.error) {
         banner.style.display = "";
@@ -513,9 +618,11 @@
       }
       var gu = await SB.client.auth.getUser();
       user = (gu && gu.data && gu.data.user) ? gu.data.user : null;
-      if (!user) { window.location.href = "index.html"; return; }
+      if (!user) { await cerrarSesion(); return; }
 
-      var gp = await SB.client.from("profiles").select("*").eq("id", user.id).maybeSingle();
+      var gp = await leerConReintento(function () {
+        return SB.client.from("profiles").select("*").eq("id", user.id).maybeSingle();
+      });
       if (gp && gp.error) {
         SBH.mostrar("msg", SBH.fmtErr(gp.error.message), "error");
         var appMain = document.getElementById("app-main");
@@ -583,8 +690,13 @@
       pollTimer = setInterval(function () {
         if (SB.configOk && document.visibilityState === "visible") actualizarNovedades();
       }, 60000);
+      iniciarControlInactividad();
     } catch (err) {
       if (window.console) console.error("Error al iniciar panel de la app:", err);
+      if (PURE.esErrorTransitorio(err)) {
+        SBH.mostrar("msg", "No se pudo cargar la información por un problema de conexión. Recupera internet y recarga la página.", "error");
+        return;
+      }
       var appMain = document.getElementById("app-main");
       if (appMain) appMain.classList.remove("hidden");
       SBH.mostrar("msg", "Ocurrió un error al cargar la aplicación. Por favor recarga la página.", "error");
@@ -617,7 +729,9 @@
 
   async function fetchNovedades() {
     if (!vistoHasta) return { contador: 0, novedades: [] };
-    var res = await SB.client.rpc("mis_novedades", { p_desde: vistoHasta });
+    var res = await leerConReintento(function () {
+      return SB.client.rpc("mis_novedades", { p_desde: vistoHasta });
+    });
     if (res.error) return { contador: 0, novedades: [] };
     return { contador: res.data.contador || 0, novedades: res.data.novedades || [] };
   }
@@ -1638,9 +1752,17 @@
     if (!document.getElementById("app-main")) return;
 
     document.getElementById("btn-logout").addEventListener("click", async function () {
+      closingSession = true;
+      limpiarEstadoPrivado();
       await SB.client.auth.signOut();
-      window.location.href = "index.html";
+      window.location.replace("index.html");
     });
+
+    if (SB.configOk && !authSubscription) {
+      authSubscription = SB.client.auth.onAuthStateChange(function (event) {
+        manejarCambioAuth(event);
+      }).data.subscription;
+    }
 
     var btnCambiarPass = document.getElementById("btn-cambiar-pass");
     if (btnCambiarPass) {

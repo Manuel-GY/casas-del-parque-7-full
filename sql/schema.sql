@@ -79,6 +79,25 @@ alter table public.profiles add column if not exists debe_cambiar_pass boolean n
 alter table public.profiles add column if not exists ultimo_acceso timestamptz;
 
 -- ============================================================
+-- 2b) AUDITORÍA DE ACCIONES ADMINISTRATIVAS
+-- ============================================================
+-- Conserva quién efectuó un cambio y los campos operativos afectados,
+-- sin duplicar nombres, correos, descripciones ni fotografías privadas.
+create table if not exists public.auditoria (
+  id          bigint generated always as identity primary key,
+  actor_id    uuid references public.profiles(id) on delete set null,
+  accion      text not null,
+  entidad     text not null,
+  entidad_id  uuid,
+  detalle     jsonb not null default '{}'::jsonb,
+  creado_en   timestamptz not null default now()
+);
+
+create index if not exists auditoria_fecha_idx on public.auditoria (creado_en desc);
+create index if not exists auditoria_entidad_idx on public.auditoria (entidad, entidad_id);
+alter table public.auditoria drop constraint if exists auditoria_actor_id_fkey;
+
+-- ============================================================
 -- 3) RECLAMOS (reportes del condominio)
 -- ============================================================
 create table if not exists public.reclamos (
@@ -156,6 +175,74 @@ alter table public.sugerencias add column if not exists updated_at timestamptz n
 alter table public.sugerencias add column if not exists eliminado boolean not null default false;
 alter table public.sugerencias add column if not exists eliminado_en timestamptz;
 alter table public.sugerencias add column if not exists eliminado_por uuid;
+
+create or replace function public.registrar_auditoria()
+returns trigger
+language plpgsql security definer
+set search_path = public
+as $$
+declare
+  v_accion text;
+  v_detalle jsonb;
+begin
+  if TG_TABLE_NAME = 'profiles' and TG_OP = 'UPDATE' and NEW.rol is not distinct from OLD.rol then
+    return NEW;
+  end if;
+
+  if TG_TABLE_NAME = 'profiles' then
+    v_accion := case
+      when TG_OP = 'INSERT' then 'perfil_creado'
+      when TG_OP = 'UPDATE' then 'rol_actualizado'
+      else 'perfil_eliminado'
+    end;
+    v_detalle := case
+      when TG_OP = 'UPDATE' then jsonb_build_object('rol_anterior', OLD.rol, 'rol_nuevo', NEW.rol)
+      when TG_OP = 'INSERT' then jsonb_build_object('rol_nuevo', NEW.rol)
+      else jsonb_build_object('rol_anterior', OLD.rol)
+    end;
+  else
+    v_accion := case
+      when TG_OP = 'INSERT' then TG_TABLE_NAME || '_creado'
+      when TG_OP = 'DELETE' then TG_TABLE_NAME || '_eliminado'
+      when coalesce(NEW.eliminado, false) and not coalesce(OLD.eliminado, false) then TG_TABLE_NAME || '_archivado'
+      when not coalesce(NEW.eliminado, false) and coalesce(OLD.eliminado, false) then TG_TABLE_NAME || '_restaurado'
+      else TG_TABLE_NAME || '_actualizado'
+    end;
+    v_detalle := case
+      when TG_OP = 'DELETE' then jsonb_build_object('estado', OLD.estado)
+      when TG_OP = 'INSERT' then jsonb_build_object('estado', NEW.estado)
+      else jsonb_build_object('estado_anterior', OLD.estado, 'estado_nuevo', NEW.estado)
+    end;
+  end if;
+
+  insert into public.auditoria (actor_id, accion, entidad, entidad_id, detalle)
+  values (
+    auth.uid(),
+    v_accion,
+    TG_TABLE_NAME,
+    case when TG_OP = 'DELETE' then OLD.id else NEW.id end,
+    v_detalle
+  );
+
+  if TG_OP = 'DELETE' then return OLD; end if;
+  return NEW;
+end;
+$$;
+
+drop trigger if exists auditoria_profiles_trg on public.profiles;
+create trigger auditoria_profiles_trg
+  after insert or update or delete on public.profiles
+  for each row execute function public.registrar_auditoria();
+
+drop trigger if exists auditoria_reclamos_trg on public.reclamos;
+create trigger auditoria_reclamos_trg
+  after insert or update or delete on public.reclamos
+  for each row execute function public.registrar_auditoria();
+
+drop trigger if exists auditoria_sugerencias_trg on public.sugerencias;
+create trigger auditoria_sugerencias_trg
+  after insert or update or delete on public.sugerencias
+  for each row execute function public.registrar_auditoria();
 
 -- ============================================================
 -- 5) FUNCIONES DE AYUDA (evitan recursión en RLS)
@@ -300,6 +387,37 @@ begin
   update public.profiles set debe_cambiar_pass = false where id = auth.uid();
 end;
 $$;
+
+-- Consulta limitada para revisiones administrativas. No expone perfiles,
+-- correos ni el contenido de reportes/sugerencias.
+create or replace function public.auditoria_reciente(p_limite integer default 50)
+returns table (
+  id bigint,
+  actor_id uuid,
+  accion text,
+  entidad text,
+  entidad_id uuid,
+  detalle jsonb,
+  creado_en timestamptz
+)
+language plpgsql security definer
+set search_path = public
+as $$
+begin
+  if coalesce(public.mi_rol(), '') <> 'admin' then
+    raise exception 'Solo un administrador puede consultar la auditoría.';
+  end if;
+
+  return query
+  select a.id, a.actor_id, a.accion, a.entidad, a.entidad_id, a.detalle, a.creado_en
+  from public.auditoria a
+  order by a.creado_en desc
+  limit least(greatest(coalesce(p_limite, 50), 1), 100);
+end;
+$$;
+
+revoke all on function public.auditoria_reciente(integer) from public;
+grant execute on function public.auditoria_reciente(integer) to authenticated;
 
 -- ============================================================
 -- 8) AVISOS DENTRO DE LA APP (campana de novedades)
@@ -778,6 +896,7 @@ alter table public.profiles          enable row level security;
 alter table public.reclamos          enable row level security;
 alter table public.sugerencias       enable row level security;
 alter table public.intentos_registro enable row level security;
+alter table public.auditoria         enable row level security;
 
 -- CASAS: lectura para usuarios autenticados (los anonimos no la necesitan:
 -- el select de casas del registro usa la lista estatica del cliente).
@@ -799,6 +918,12 @@ create policy "profiles_comite_admin" on public.profiles
 -- (solo la función SECURITY DEFINER auth.restringir_registro).
 drop policy if exists "intentos_registro_cerrado" on public.intentos_registro;
 create policy "intentos_registro_cerrado" on public.intentos_registro
+  for select using (false);
+
+-- AUDITORÍA: no se consulta directamente; solo mediante la RPC anterior,
+-- que exige rol admin y limita tanto los campos como el número de filas.
+drop policy if exists "auditoria_cerrada" on public.auditoria;
+create policy "auditoria_cerrada" on public.auditoria
   for select using (false);
 
 -- RECLAMOS INSERT: vecino crea reclamos solo a su nombre y casa

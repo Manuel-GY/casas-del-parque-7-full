@@ -24,6 +24,7 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+  <div id="network-status" class="network-status" role="status" aria-live="polite" hidden></div>
   <!--
     app.html - Panel principal del condominio.
     Estructura: topbar (marca, perfil, campana, salir) -> secciones dentro
@@ -49,7 +50,7 @@
       </div>
     </div>
     <div class="user">
-      <button class="bell" id="btn-novedades" type="button" aria-label="Novedades" title="Novedades">
+      <button class="bell" id="btn-novedades" type="button" aria-label="Novedades" title="Novedades" aria-describedby="bell-count">
         <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/>
         </svg>
@@ -324,10 +325,10 @@
     </footer>
   </div>
 
-  <div id="modal-privacidad" class="modal-overlay hidden" aria-hidden="true">
+  <div id="modal-privacidad" class="modal-overlay hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="privacy-title">
     <div class="modal-card">
       <div class="modal-head">
-        <h2>🔒 Política de Privacidad y Protección de Datos</h2>
+        <h2 id="privacy-title">🔒 Política de Privacidad y Protección de Datos</h2>
         <button class="modal-close" id="btn-close-privacy" type="button" aria-label="Cerrar">&times;</button>
       </div>
       <div class="modal-body">
@@ -351,10 +352,10 @@
     </div>
   </div>
 
-  <div id="modal-foto" class="modal-overlay hidden" aria-hidden="true">
+  <div id="modal-foto" class="modal-overlay hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="photo-title">
     <div class="modal-card modal-card-foto">
       <div class="modal-head">
-        <h2>📷 Fotograf&iacute;a Adjunta</h2>
+        <h2 id="photo-title">📷 Fotograf&iacute;a Adjunta</h2>
         <button class="modal-close" id="btn-close-foto" type="button" aria-label="Cerrar">&times;</button>
       </div>
       <div class="modal-body modal-body-foto" style="text-align: center; padding: 18px;">

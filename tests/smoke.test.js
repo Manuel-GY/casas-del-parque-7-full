@@ -92,3 +92,14 @@ test("manifest incluye los iconos generados", () => {
     assert.ok(fs.existsSync(path.join(ROOT, icon.src)), `Falta icono ${icon.src}`);
   }
 });
+
+test("la capa de sesión y auditoría está integrada", () => {
+  const app = read("js/app.js");
+  const auth = read("js/auth.js");
+  const schema = read("sql/schema.sql");
+  assert.match(app, /iniciarControlInactividad/, "app.js debe controlar la inactividad");
+  assert.match(app, /leerConReintento/, "app.js debe reintentar solo lecturas");
+  assert.match(auth, /autoRefreshToken: true/, "auth.js debe renovar tokens");
+  assert.match(schema, /create table if not exists public\.auditoria/, "schema debe definir auditoría");
+  assert.match(schema, /create or replace function public\.auditoria_reciente/, "schema debe proteger la consulta de auditoría");
+});

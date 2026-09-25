@@ -54,7 +54,9 @@
 
   if (SB.configOk) {
     try {
-      SB.client = supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+      SB.client = supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, {
+        auth: { autoRefreshToken: true, persistSession: true, detectSessionInUrl: true }
+      });
     } catch (e) {
       SB.configOk = false;
     }
@@ -146,15 +148,21 @@
     var closeBtn = document.getElementById("btn-close-privacy");
     if (!link || !modal) return;
 
+    var lastFocus = null;
+
     function abrir(e) {
       if (e) e.preventDefault();
+      lastFocus = document.activeElement;
       modal.classList.remove("hidden");
       modal.setAttribute("aria-hidden", "false");
+      var first = modal.querySelector("button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])");
+      if (first) first.focus();
     }
 
     function cerrar() {
       modal.classList.add("hidden");
       modal.setAttribute("aria-hidden", "true");
+      if (lastFocus && typeof lastFocus.focus === "function") lastFocus.focus();
     }
 
     link.addEventListener("click", abrir);
@@ -171,7 +179,32 @@
       if (e.key === "Escape" && !modal.classList.contains("hidden")) {
         cerrar();
       }
+      if (e.key !== "Tab" || modal.classList.contains("hidden")) return;
+      var focusables = modal.querySelectorAll("button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])");
+      if (!focusables.length) return;
+      var first = focusables[0];
+      var last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     });
+  }
+
+  function bindNetworkStatus() {
+    var status = document.getElementById("network-status");
+    if (!status) return;
+    function update() {
+      var online = navigator.onLine;
+      status.hidden = online;
+      status.textContent = online ? "" : "Sin conexión. No se mostrarán ni enviarán datos nuevos hasta recuperar internet.";
+    }
+    window.addEventListener("online", update);
+    window.addEventListener("offline", update);
+    update();
   }
 
   /* ------------------------------------------------------------------ */
@@ -180,6 +213,7 @@
 
   document.addEventListener("DOMContentLoaded", function () {
     bindPrivacyModal();
+    bindNetworkStatus();
   });
 
   /* ------------------------------------------------------------------ */
@@ -187,5 +221,5 @@
   /* ------------------------------------------------------------------ */
 
   window.SB = SB;
-  window.SBH = { mostrar: mostrar, esc: esc, fmtFecha: fmtFecha, llenarCasas: llenarCasas, fmtErr: fmtErr, bindPrivacyModal: bindPrivacyModal, catLabel: catLabel };
+  window.SBH = { mostrar: mostrar, esc: esc, fmtFecha: fmtFecha, llenarCasas: llenarCasas, fmtErr: fmtErr, bindPrivacyModal: bindPrivacyModal, bindNetworkStatus: bindNetworkStatus, catLabel: catLabel };
 })();

@@ -24,6 +24,7 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+  <div id="network-status" class="network-status" role="status" aria-live="polite" hidden></div>
   <!--
     index.html - Pantalla de login / registro / recuperacion.
     Tres vistas (view-login, view-register, view-recovery) alternadas desde
@@ -119,10 +120,10 @@
     </div>
   </div>
 
-  <div id="modal-privacidad" class="modal-overlay hidden" aria-hidden="true">
+  <div id="modal-privacidad" class="modal-overlay hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="privacy-title">
     <div class="modal-card">
       <div class="modal-head">
-        <h2>🔒 Política de Privacidad y Protección de Datos</h2>
+        <h2 id="privacy-title">🔒 Política de Privacidad y Protección de Datos</h2>
         <button class="modal-close" id="btn-close-privacy" type="button" aria-label="Cerrar">&times;</button>
       </div>
       <div class="modal-body">

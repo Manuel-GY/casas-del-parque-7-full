@@ -75,6 +75,9 @@ Entra desde el **teléfono o cualquier navegador** (la PWA se instala desde el n
 - **Subida restringida**: la política de storage solo acepta **imágenes** (`mimetype image/*`) de hasta **5 MB**, en la carpeta del usuario autenticado.
 - **Foto liberada al resolver**: al marcar un reporte o sugerencia como **Resuelto/Resuelta** se elimina la foto del bucket `reportes` (el reporte sigue contando en las estadísticas). La acción es **irreversible**.
 - **Exportación CSV segura**: la descarga neutraliza la inyección de fórmulas (`=`, `+`, `-`, `@`) para que Excel/Sheets no ejecuten contenido como fórmula.
+- **Sesión clara y segura**: Supabase renueva el token activo; además, el panel avisa dos minutos antes y cierra la sesión tras 30 minutos sin interacción. Los cierres o tokens vencidos llevan al login con una explicación.
+- **Red y operaciones resilientes**: el sitio indica cuando está sin conexión y reintenta una vez solo las lecturas que fallan transitoriamente; nunca reintenta escrituras para no duplicar reportes o sugerencias.
+- **Auditoría administrativa**: los cambios de rol, estado, archivado y eliminación quedan registrados sin copiar contenido privado, fotografías, correos ni nombres. Solo un administrador puede consultar hasta 100 eventos mediante `auditoria_reciente`.
 - **Scripts locales + CSP**: supabase-js se sirve desde `js/supabase.min.js` (sin CDN externo) y las páginas llevan un **Content-Security-Policy** por `<meta>` (GitHub Pages no permite headers personalizados; `vercel.json` lo aplica si se despliega en Vercel).
 
 ---
@@ -153,6 +156,15 @@ npm test
 - `tests/smoke.test.js`: consistencia HTML↔JS (IDs usados existen), orden de scripts, archivos referenciados existen, sin scripts inline y sin restos de la versión de guardias.
 - CI en GitHub Actions ejecuta `npm test` en cada push/PR.
 
+### Prueba manual de autenticación y PWA
+
+Antes de publicar cambios de autenticación, verifica con un usuario de prueba:
+
+1. Iniciar sesión, dejar la aplicación inactiva y confirmar que el aviso aparece a los 28 minutos y el retorno al login ocurre a los 30.
+2. Cortar y restaurar la conexión: debe aparecer el aviso offline y las lecturas deben recuperarse al recargar, sin duplicar registros.
+3. Abrir el modal de privacidad con teclado; `Tab` debe permanecer dentro del modal y `Escape` debe devolver el foco al enlace de origen.
+4. Aplicar el esquema y, con una cuenta admin, ejecutar `select * from public.auditoria_reciente(50);` en el SQL Editor para comprobar eventos sin datos de contenido.
+
 Regenerar iconos (opcional, ya están versionados en `icons/`):
 
 ```bash
@@ -174,13 +186,13 @@ npm run icons
 ├── js/pure.js           Helpers puros (sin DOM) y testeables con Node
 ├── js/supabase.min.js   SDK de Supabase (self-hosted, sin CDN externo)
 ├── js/auth.js           Cliente Supabase, catálogo de categorías, traducción de errores y modal
-├── js/index.js          Lógica de autenticación y recuperación de contraseña
-├── js/app.js            Panel dinámico (resumen, novedades, fotos, validaciones, exportación CSV)
+├── js/index.js          Lógica de autenticación, registro pendiente con expiración y recuperación de contraseña
+├── js/app.js            Panel dinámico, sesión por inactividad, lecturas reintentables, novedades y exportación CSV
 ├── js/stats.js          Motor de gráficos dinámicos en HTML5 Canvas (sin dependencias)
 ├── js/register-sw.js    Registro del Service Worker (archivo externo por CSP)
 ├── icons/               Iconos PNG del PWA (192, 512, 180 y maskable)
 ├── scripts/             Utilidades: make-icons.ps1 (iconos) y apply-schema.mjs (deploy BD)
-├── sql/schema.sql       Esquema de BD (idempotente), funciones SECURITY DEFINER y políticas RLS
+├── sql/schema.sql       Esquema de BD, auditoría, funciones SECURITY DEFINER y políticas RLS
 ├── tests/               Tests de Node (helpers puros + smoke de la webapp)
 ├── .github/workflows/   ci.yml (tests en push/PR) + db-push.yml (aplica schema automáticamente)
 └── vercel.json          Config de deploy estático + headers de seguridad en Vercel
@@ -198,4 +210,5 @@ npm run icons
 - Acciones de archivo y borrado para administradores.
 - PWA instalable (manifest, service worker, iconos) y soporte offline del shell.
 - `vercel.json` con headers de seguridad (CSP, `nosniff`, `X-Frame-Options`, `Permissions-Policy`).
+- Cierre por inactividad, aviso offline, reintentos seguros de lectura y auditoría administrativa protegida por RLS.
 - Tests de Node + CI en GitHub Actions.

@@ -48,6 +48,7 @@
 
   /** Estados de sugerencias: api -> etiqueta y api -> estilo generico. */
   var ESTADOS_SUGERENCIA = { nueva: "Nueva", en_revision: "En revisión", resuelta: "Resuelta" };
+  var REGISTRO_PENDIENTE_MAX_MS = 24 * 60 * 60 * 1000;
 
   /** Devuelve la etiqueta legible de una categoría de reporte. */
   function catLabel(clave) {
@@ -114,6 +115,25 @@
     return s;
   }
 
+  /** Determina si un error puede reintentarse sin repetir una escritura. */
+  function esErrorTransitorio(err) {
+    var s = String(err && err.message ? err.message : err || "");
+    return /failed to fetch|networkerror|load failed|fetch failed|timeout|temporarily unavailable|502|503|504/i.test(s);
+  }
+
+  /**
+   * Valida el registro conservado mientras el usuario confirma su correo.
+   * Nunca acepta datos sin una fecha de creación válida y reciente.
+   */
+  function esRegistroPendienteValido(registro, ahora) {
+    if (!registro || typeof registro.nombre !== "string" || !registro.nombre.trim()) return false;
+    if (!registro || typeof registro.email !== "string" || !registro.email.trim()) return false;
+    if (!Number.isInteger(registro.casa) || registro.casa < 1 || registro.casa > TOTAL_CASAS) return false;
+    if (!Number.isFinite(registro.creadoEn)) return false;
+    var referencia = typeof ahora === "number" ? ahora : Date.now();
+    return registro.creadoEn <= referencia && referencia - registro.creadoEn <= REGISTRO_PENDIENTE_MAX_MS;
+  }
+
   /**
    * Formatea una fecha ISO a formato legible en español chileno.
    */
@@ -178,6 +198,9 @@
     ESTADOS_SUGERENCIA: ESTADOS_SUGERENCIA,
     catLabel: catLabel,
     fmtErr: fmtErr,
+    esErrorTransitorio: esErrorTransitorio,
+    esRegistroPendienteValido: esRegistroPendienteValido,
+    REGISTRO_PENDIENTE_MAX_MS: REGISTRO_PENDIENTE_MAX_MS,
     fmtFecha: fmtFecha,
     fmtMes: fmtMes,
     construirCSV: construirCSV,
